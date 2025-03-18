@@ -822,7 +822,6 @@ function addCategory() {
     
     // Get the category name and icon
     const name = document.getElementById('categoryName').value;
-    const icon = document.querySelector('input[name="categoryIcon"]:checked').value;
     
     if (!name) {
         showAlert('Veuillez entrer un nom de catégorie', 'danger');
@@ -831,7 +830,7 @@ function addCategory() {
     
     // Add the form data
     formData.append('name', name);
-    formData.append('icon', icon);
+    formData.append('icon', selectedIcon);
     formData.append('csrf_token', document.querySelector('meta[name="csrf-token"]').content);
     
     fetch('/add_category', {
@@ -875,8 +874,10 @@ function addCategory() {
                 select.appendChild(option.cloneNode(true));
             });
             
-            // Reset the form
+            // Reset the form and icon selection
             form.reset();
+            selectedIcon = 'fas fa-globe';
+            populateIconGrid();
             
             // Close the modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('categoryModal'));
@@ -918,7 +919,17 @@ const icons = [
     'fas fa-network-wired', 'fas fa-gamepad', 'fas fa-book', 'fas fa-newspaper',
     'fas fa-shopping-cart', 'fas fa-utensils', 'fas fa-car', 'fas fa-plane',
     'fas fa-train', 'fas fa-bus', 'fas fa-bicycle', 'fas fa-running',
-    'fas fa-dumbbell', 'fas fa-swimming-pool', 'fas fa-hiking', 'fas fa-mountain'
+    'fas fa-dumbbell', 'fas fa-swimming-pool', 'fas fa-hiking', 'fas fa-mountain',
+    'fas fa-briefcase', 'fas fa-lightbulb', 'fas fa-cloud', 'fas fa-cogs',
+    'fas fa-wrench', 'fas fa-bell', 'fas fa-comments', 'fas fa-gift',
+    'fas fa-home', 'fas fa-building', 'fas fa-calendar-alt', 'fas fa-check-circle',
+    'fas fa-exclamation-circle', 'fas fa-info-circle', 'fas fa-question-circle',
+    'fas fa-search', 'fas fa-star', 'fas fa-tag', 'fas fa-thumbs-up',
+    'fas fa-trash', 'fas fa-upload', 'fas fa-download', 'fas fa-wifi',
+    'fas fa-paperclip', 'fas fa-map-marker-alt', 'fas fa-phone', 'fas fa-print',
+    'fas fa-rocket', 'fas fa-trophy', 'fas fa-medkit', 'fas fa-flask',
+    'fas fa-coffee', 'fas fa-tree', 'fas fa-fire', 'fas fa-sun',
+    'fas fa-moon', 'fas fa-snowflake', 'fas fa-smile', 'fas fa-frown'
 ];
 
 // Populate icon grid
