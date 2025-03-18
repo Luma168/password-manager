@@ -39,7 +39,7 @@
                             <td>{{ password.username }}</td>
                             <td>
                                 <span class="badge bg-secondary text-white">
-                                    {{ password.category or 'Non catégorisé' }}
+                                    {{ password.category.name or 'Non catégorisé' }}
                                 </span>
                             </td>
                             <td class="text-muted">{{ password.last_modified.strftime('%d/%m/%Y %H:%M') }}</td>
@@ -98,14 +98,19 @@
                     </div>
                     <div class="mb-3">
                         <label for="category" class="form-label">Catégorie</label>
-                        <select class="form-select" id="category" name="category">
-                            <option value="">Sélectionner une catégorie</option>
-                            <option value="travail">Travail</option>
-                            <option value="personnel">Personnel</option>
-                            <option value="banque">Banque</option>
-                            <option value="social">Réseaux sociaux</option>
-                            <option value="autre">Autre</option>
-                        </select>
+                        <div class="input-group">
+                            <select class="form-select" id="category" name="category_id">
+                                <option value="">Sans catégorie</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}">
+                                    <i class="{{ category.icon }}"></i> {{ category.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#categoryModal">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label for="notes" class="form-label">Notes</label>
@@ -155,14 +160,19 @@
                     </div>
                     <div class="mb-3">
                         <label for="edit_category" class="form-label">Catégorie</label>
-                        <select class="form-select" id="edit_category" name="category">
-                            <option value="">Sélectionner une catégorie</option>
-                            <option value="travail">Travail</option>
-                            <option value="personnel">Personnel</option>
-                            <option value="banque">Banque</option>
-                            <option value="social">Réseaux sociaux</option>
-                            <option value="autre">Autre</option>
-                        </select>
+                        <div class="input-group">
+                            <select class="form-select" id="edit_category" name="category_id">
+                                <option value="">Sans catégorie</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}">
+                                    <i class="{{ category.icon }}"></i> {{ category.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#categoryModal">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label for="edit_notes" class="form-label">Notes</label>
@@ -250,11 +260,6 @@
                     <input type="datetime-local" class="form-control" id="expirationDateTime" required>
                     <div class="form-text">Le lien sera valable jusqu'à cette date et heure.</div>
                 </div>
-                <div class="mb-3">
-                    <label for="maxViews" class="form-label">Nombre maximum de vues</label>
-                    <input type="number" class="form-control" id="maxViews" min="1" max="10" value="1" required>
-                    <div class="form-text">Le lien expirera après avoir été consulté ce nombre de fois.</div>
-                </div>
                 <div class="input-group mb-3">
                     <input type="text" class="form-control" id="shareUrl" readonly>
                     <button class="btn btn-outline-secondary" type="button" id="copyShareUrl">
@@ -269,6 +274,60 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
                 <button type="button" class="btn btn-primary" id="confirmShare">Partager</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add this modal for category management -->
+<div class="modal fade" id="categoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Gérer les catégories</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addCategoryForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label for="categoryName" class="form-label">Nom de la catégorie</label>
+                        <input type="text" class="form-control" id="categoryName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Icône</label>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" class="form-control" id="iconSearch" placeholder="Rechercher une icône...">
+                        </div>
+                        <div class="icon-grid" style="max-height: 300px; overflow-y: auto;">
+                            <div class="row g-2" id="iconGrid">
+                                <!-- Icons will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <hr>
+                <h6>Catégories existantes</h6>
+                <div id="categoriesList" class="list-group">
+                    {% for category in categories %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center" data-category-id="{{ category.id }}">
+                        <div>
+                            <i class="{{ category.icon }} me-2"></i>
+                            {{ category.name }}
+                        </div>
+                        <button class="btn btn-sm btn-danger delete-category" data-category-id="{{ category.id }}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-primary" id="addCategoryBtn">Ajouter</button>
             </div>
         </div>
     </div>
@@ -321,6 +380,35 @@
     width: 20px;
     text-align: center;
 }
+
+.icon-grid {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+}
+
+.icon-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+    cursor: pointer;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+}
+
+.icon-item:hover {
+    background-color: #f8f9fa;
+}
+
+.icon-item.selected {
+    background-color: #e9ecef;
+    border: 2px solid #0d6efd;
+}
+
+.icon-item i {
+    font-size: 1.25rem;
+}
 </style>
 
 <script>
@@ -359,15 +447,8 @@ async function sharePassword(passwordId) {
 async function confirmShare() {
     try {
         const expirationDateTime = document.getElementById('expirationDateTime').value;
-        const maxViews = document.getElementById('maxViews').value;
-        
         if (!expirationDateTime) {
             alert('Veuillez sélectionner une date et heure d\'expiration');
-            return;
-        }
-
-        if (!maxViews || maxViews < 1 || maxViews > 10) {
-            alert('Le nombre de vues doit être entre 1 et 10');
             return;
         }
 
@@ -378,8 +459,7 @@ async function confirmShare() {
                 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
             },
             body: JSON.stringify({ 
-                expires_at: expirationDateTime,
-                max_views: parseInt(maxViews)
+                expires_at: expirationDateTime
             })
         });
 
@@ -639,7 +719,7 @@ document.querySelectorAll('.view-password').forEach(button => {
                 document.getElementById('view_title').textContent = data.password.title;
                 document.getElementById('view_username').textContent = data.password.username;
                 document.getElementById('view_password').value = data.password.password;
-                document.getElementById('view_category').textContent = data.password.category || 'Non catégorisé';
+                document.getElementById('view_category').textContent = data.password.category.name || 'Non catégorisé';
                 document.getElementById('view_notes').textContent = data.password.notes || '';
                 
                 const viewModal = new bootstrap.Modal(document.getElementById('viewPasswordModal'));
@@ -686,6 +766,201 @@ document.getElementById('copyShareUrl').addEventListener('click', function() {
     notification.textContent = 'Lien copié !';
     document.body.appendChild(notification);
     setTimeout(() => notification.remove(), 2000);
+});
+
+// Category management
+document.addEventListener('DOMContentLoaded', function() {
+    // ... existing code ...
+
+    // Add category
+    document.getElementById('addCategoryBtn').addEventListener('click', addCategory);
+
+    // Delete category
+    document.addEventListener('click', async function(e) {
+        if (e.target.closest('.delete-category')) {
+            const categoryId = e.target.closest('.delete-category').dataset.categoryId;
+            
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/delete_category/${categoryId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Remove category from the list
+                    const categoryElement = document.querySelector(`[data-category-id="${categoryId}"]`);
+                    categoryElement.remove();
+
+                    // Remove category from select elements
+                    const selects = document.querySelectorAll('select');
+                    selects.forEach(select => {
+                        const option = select.querySelector(`option[value="${categoryId}"]`);
+                        if (option) option.remove();
+                    });
+                } else {
+                    alert(data.error || 'Erreur lors de la suppression de la catégorie');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la suppression de la catégorie');
+            }
+        }
+    });
+});
+
+function addCategory() {
+    const form = document.getElementById('addCategoryForm');
+    const formData = new FormData();
+    
+    // Get the category name and icon
+    const name = document.getElementById('categoryName').value;
+    const icon = document.querySelector('input[name="categoryIcon"]:checked').value;
+    
+    if (!name) {
+        showAlert('Veuillez entrer un nom de catégorie', 'danger');
+        return;
+    }
+    
+    // Add the form data
+    formData.append('name', name);
+    formData.append('icon', icon);
+    formData.append('csrf_token', document.querySelector('meta[name="csrf-token"]').content);
+    
+    fetch('/add_category', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Erreur réseau');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Add the new category to the list
+            const categoriesList = document.getElementById('categoriesList');
+            const newCategory = document.createElement('div');
+            newCategory.className = 'list-group-item d-flex justify-content-between align-items-center';
+            newCategory.dataset.categoryId = data.category.id;
+            newCategory.innerHTML = `
+                <div>
+                    <i class="${data.category.icon} me-2"></i>
+                    ${data.category.name}
+                </div>
+                <button class="btn btn-sm btn-danger delete-category" data-category-id="${data.category.id}">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            categoriesList.appendChild(newCategory);
+            
+            // Add the new category to all category select elements
+            const selects = document.querySelectorAll('select[name="category_id"]');
+            const option = document.createElement('option');
+            option.value = data.category.id;
+            option.innerHTML = `<i class="${data.category.icon}"></i> ${data.category.name}`;
+            
+            selects.forEach(select => {
+                select.appendChild(option.cloneNode(true));
+            });
+            
+            // Reset the form
+            form.reset();
+            
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('categoryModal'));
+            modal.hide();
+            
+            // Show success message
+            showAlert('Catégorie ajoutée avec succès', 'success');
+        } else {
+            throw new Error(data.error || 'Erreur lors de l\'ajout de la catégorie');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert(error.message || 'Erreur lors de l\'ajout de la catégorie', 'danger');
+    });
+}
+
+// Add this function if it doesn't exist
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} position-fixed top-0 end-0 m-3`;
+    alertDiv.style.zIndex = '9999';
+    alertDiv.textContent = message;
+    document.body.appendChild(alertDiv);
+    setTimeout(() => alertDiv.remove(), 3000);
+}
+
+// Icon grid functionality
+const iconGrid = document.getElementById('iconGrid');
+const iconSearch = document.getElementById('iconSearch');
+let selectedIcon = 'fas fa-globe';
+
+// List of available icons
+const icons = [
+    'fas fa-globe', 'fas fa-user', 'fas fa-key', 'fas fa-credit-card',
+    'fas fa-envelope', 'fas fa-lock', 'fas fa-shield-alt', 'fas fa-folder',
+    'fas fa-heart', 'fas fa-camera', 'fas fa-music', 'fas fa-video',
+    'fas fa-palette', 'fas fa-code', 'fas fa-database', 'fas fa-server',
+    'fas fa-network-wired', 'fas fa-gamepad', 'fas fa-book', 'fas fa-newspaper',
+    'fas fa-shopping-cart', 'fas fa-utensils', 'fas fa-car', 'fas fa-plane',
+    'fas fa-train', 'fas fa-bus', 'fas fa-bicycle', 'fas fa-running',
+    'fas fa-dumbbell', 'fas fa-swimming-pool', 'fas fa-hiking', 'fas fa-mountain'
+];
+
+// Populate icon grid
+function populateIconGrid(filter = '') {
+    iconGrid.innerHTML = '';
+    icons
+        .filter(icon => icon.toLowerCase().includes(filter.toLowerCase()))
+        .forEach(icon => {
+            const col = document.createElement('div');
+            col.className = 'col-3';
+            col.innerHTML = `
+                <div class="icon-item ${selectedIcon === icon ? 'selected' : ''}" data-icon="${icon}">
+                    <i class="${icon}"></i>
+                </div>
+            `;
+            iconGrid.appendChild(col);
+        });
+
+    // Add click handlers
+    document.querySelectorAll('.icon-item').forEach(item => {
+        item.addEventListener('click', () => {
+            selectedIcon = item.dataset.icon;
+            document.querySelectorAll('.icon-item').forEach(i => i.classList.remove('selected'));
+            item.classList.add('selected');
+        });
+    });
+}
+
+// Search functionality
+iconSearch.addEventListener('input', (e) => {
+    populateIconGrid(e.target.value);
+});
+
+// Initialize icon grid
+populateIconGrid();
+
+// Update form submission to use selected icon
+document.getElementById('addCategoryForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    formData.set('categoryIcon', selectedIcon);
+    // ... rest of the form submission code ...
 });
 </script>
 {% endblock %} 

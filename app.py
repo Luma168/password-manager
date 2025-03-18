@@ -58,12 +58,27 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    icon = db.Column(db.String(50), nullable=False)  # Font Awesome icon class
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    passwords = db.relationship('Password', backref='category', lazy=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'icon': self.icon
+        }
+
 class Password(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     username = db.Column(db.String(100), nullable=False)
     encrypted_password = db.Column(db.String(500), nullable=False)
-    category = db.Column(db.String(50))
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_modified = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -75,14 +90,23 @@ class Password(db.Model):
     def get_password(self):
         return cipher_suite.decrypt(self.encrypted_password.encode()).decode()
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'username': self.username,
+            'category': self.category.to_dict() if self.category else None,
+            'notes': self.notes,
+            'created_at': self.created_at.isoformat(),
+            'last_modified': self.last_modified.isoformat()
+        }
+
 class SharedPassword(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     password_id = db.Column(db.Integer, db.ForeignKey('password.id'), nullable=False)
     token = db.Column(db.String(64), unique=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     expires_at = db.Column(db.DateTime, nullable=False)
-    max_views = db.Column(db.Integer, nullable=False, default=1)  # Default to 1 view
-    current_views = db.Column(db.Integer, nullable=False, default=0)  # Track number of views
     is_active = db.Column(db.Boolean, default=True)
 
     password = db.relationship('Password', backref=db.backref('shares', lazy=True))
@@ -131,10 +155,23 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html')
 
+@app.context_processor
+def inject_categories():
+    if current_user.is_authenticated:
+        categories = Category.query.filter_by(user_id=current_user.id).all()
+        return {'categories': categories}
+    return {'categories': []}
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    passwords = Password.query.filter_by(user_id=current_user.id).all()
+    category_id = request.args.get('category', type=int)
+    query = Password.query.filter_by(user_id=current_user.id)
+    
+    if category_id:
+        query = query.filter_by(category_id=category_id)
+    
+    passwords = query.all()
     return render_template('dashboard.html', passwords=passwords)
 
 @app.route('/logout')
@@ -151,13 +188,13 @@ def add_password():
         title = request.form.get('title')
         username = request.form.get('username')
         password = request.form.get('password')
-        category = request.form.get('category')
+        category_id = request.form.get('category_id')
         notes = request.form.get('notes')
 
         new_password = Password(
             title=title,
             username=username,
-            category=category,
+            category_id=category_id if category_id else None,
             notes=notes,
             user_id=current_user.id
         )
@@ -185,7 +222,7 @@ def get_password(password_id):
                 'title': password.title,
                 'username': password.username,
                 'password': password.get_password(),
-                'category': password.category,
+                'category': password.category.to_dict() if password.category else None,
                 'notes': password.notes
             }
         })
@@ -204,7 +241,7 @@ def update_password():
         
         password.title = request.form.get('title')
         password.username = request.form.get('username')
-        password.category = request.form.get('category')
+        password.category_id = request.form.get('category_id')
         password.notes = request.form.get('notes')
         
         if request.form.get('password'):
@@ -243,14 +280,9 @@ def share_password(password_id):
         if not password:
             return jsonify({'error': 'Mot de passe non trouvé'}), 404
 
-        # Get expiration datetime and max views from request
+        # Get expiration datetime from request
         data = request.get_json()
         expires_at = datetime.fromisoformat(data.get('expires_at').replace('Z', '+00:00'))
-        max_views = int(data.get('max_views', 1))  # Default to 1 view if not specified
-        
-        # Validate max views
-        if max_views < 1 or max_views > 10:
-            return jsonify({'error': 'Le nombre de vues doit être entre 1 et 10'}), 400
         
         # Convert to Paris timezone
         expires_at = paris_tz.localize(expires_at)
@@ -270,9 +302,7 @@ def share_password(password_id):
         shared_password = SharedPassword(
             password_id=password.id,
             token=token,
-            expires_at=expires_at,
-            max_views=max_views,
-            current_views=0
+            expires_at=expires_at
         )
         
         db.session.add(shared_password)
@@ -284,8 +314,7 @@ def share_password(password_id):
         return jsonify({
             'success': True,
             'share_url': share_url,
-            'expires_at': shared_password.expires_at.astimezone(paris_tz).isoformat(),
-            'max_views': max_views
+            'expires_at': shared_password.expires_at.astimezone(paris_tz).isoformat()
         })
     except Exception as e:
         db.session.rollback()
@@ -305,25 +334,13 @@ def view_shared_password(token):
                                  password=None,
                                  expires_at=None)
         
-        # Check if max views reached
-        if shared.current_views >= shared.max_views:
-            return render_template('shared_password.html', 
-                                 error='Ce lien a atteint le nombre maximum de vues autorisées.',
-                                 password=None,
-                                 expires_at=None)
-        
-        # Increment view count
-        shared.current_views += 1
-        db.session.commit()
-        
         # Get the password details
         password = shared.password
         
         return render_template('shared_password.html', 
                              password=password, 
                              expires_at=shared.expires_at.astimezone(paris_tz),
-                             error=None,
-                             views_remaining=shared.max_views - shared.current_views)
+                             error=None)
     except Exception as e:
         return render_template('shared_password.html', 
                              error=str(e),
@@ -343,6 +360,63 @@ def revoke_share(share_id):
     db.session.commit()
     
     return jsonify({'success': True})
+
+# Add these new routes for category management
+@app.route('/categories')
+@login_required
+def get_categories():
+    categories = Category.query.filter_by(user_id=current_user.id).all()
+    return jsonify([category.to_dict() for category in categories])
+
+@app.route('/add_category', methods=['POST'])
+@login_required
+def add_category():
+    try:
+        name = request.form.get('name')
+        icon = request.form.get('icon')
+        
+        if not name or not icon:
+            return jsonify({'success': False, 'error': 'Le nom et l\'icône sont requis'})
+        
+        # Check if category name already exists for this user
+        if Category.query.filter_by(user_id=current_user.id, name=name).first():
+            return jsonify({'success': False, 'error': 'Cette catégorie existe déjà'})
+        
+        category = Category(
+            name=name,
+            icon=icon,
+            user_id=current_user.id
+        )
+        
+        db.session.add(category)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'category': category.to_dict()})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/delete_category/<int:category_id>', methods=['DELETE'])
+@login_required
+def delete_category(category_id):
+    try:
+        category = Category.query.get_or_404(category_id)
+        
+        # Check if user owns the category
+        if category.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Non autorisé'})
+        
+        # Check if category has passwords
+        if category.passwords:
+            return jsonify({'success': False, 'error': 'Impossible de supprimer une catégorie contenant des mots de passe'})
+        
+        db.session.delete(category)
+        db.session.commit()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == '__main__':
     with app.app_context():
