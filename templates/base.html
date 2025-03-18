@@ -11,6 +11,7 @@
         body {
             padding-top: 56px; /* Height of the navbar */
             background-color: #f8f9fa;
+            min-height: 100vh;
         }
         
         .sidebar {
@@ -135,9 +136,81 @@
                 border-radius: 0;
             }
         }
+
+        /* Center content for pages without sidebar */
+        body:not(.dashboard) main {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 56px);
+            margin-left: 0;
+            padding: 2rem;
+        }
+
+        body:not(.dashboard) .container {
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        body:not(.dashboard) .card {
+            border: none;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            width: 100%;
+        }
+
+        body:not(.dashboard) .card-header {
+            background-color: #343a40;
+            color: white;
+            border: none;
+            text-align: center;
+            padding: 2rem;
+            font-size: 1.5rem;
+        }
+
+        body:not(.dashboard) .card-body {
+            padding: 3rem;
+        }
+
+        body:not(.dashboard) .card-footer {
+            background-color: #f8f9fa;
+            border-top: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        body:not(.dashboard) .btn-primary {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.2rem;
+        }
+
+        body:not(.dashboard) .form-control {
+            padding: 1rem;
+            font-size: 1.2rem;
+        }
+
+        body:not(.dashboard) .input-group-text {
+            padding: 1rem;
+            font-size: 1.2rem;
+        }
+
+        body:not(.dashboard) .form-label {
+            font-size: 1.2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        /* Dashboard specific styles */
+        body.dashboard main {
+            padding-top: 1.5rem;
+            margin-left: 16.666667%; /* Match sidebar width */
+        }
+
+        body.dashboard .container-fluid {
+            padding: 0 1.5rem;
+        }
     </style>
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
         <div class="container-fluid">
             <a class="navbar-brand" href="{{ url_for('index') }}">
