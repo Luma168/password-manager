@@ -250,6 +250,11 @@
                     <input type="datetime-local" class="form-control" id="expirationDateTime" required>
                     <div class="form-text">Le lien sera valable jusqu'à cette date et heure.</div>
                 </div>
+                <div class="mb-3">
+                    <label for="maxViews" class="form-label">Nombre maximum de vues</label>
+                    <input type="number" class="form-control" id="maxViews" min="1" max="10" value="1" required>
+                    <div class="form-text">Le lien expirera après avoir été consulté ce nombre de fois.</div>
+                </div>
                 <div class="input-group mb-3">
                     <input type="text" class="form-control" id="shareUrl" readonly>
                     <button class="btn btn-outline-secondary" type="button" id="copyShareUrl">
@@ -354,8 +359,15 @@ async function sharePassword(passwordId) {
 async function confirmShare() {
     try {
         const expirationDateTime = document.getElementById('expirationDateTime').value;
+        const maxViews = document.getElementById('maxViews').value;
+        
         if (!expirationDateTime) {
             alert('Veuillez sélectionner une date et heure d\'expiration');
+            return;
+        }
+
+        if (!maxViews || maxViews < 1 || maxViews > 10) {
+            alert('Le nombre de vues doit être entre 1 et 10');
             return;
         }
 
@@ -366,7 +378,8 @@ async function confirmShare() {
                 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
             },
             body: JSON.stringify({ 
-                expires_at: expirationDateTime
+                expires_at: expirationDateTime,
+                max_views: parseInt(maxViews)
             })
         });
 

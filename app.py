@@ -81,6 +81,8 @@ class SharedPassword(db.Model):
     token = db.Column(db.String(64), unique=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     expires_at = db.Column(db.DateTime, nullable=False)
+    max_views = db.Column(db.Integer, nullable=False, default=1)  # Default to 1 view
+    current_views = db.Column(db.Integer, nullable=False, default=0)  # Track number of views
     is_active = db.Column(db.Boolean, default=True)
 
     password = db.relationship('Password', backref=db.backref('shares', lazy=True))
@@ -241,9 +243,14 @@ def share_password(password_id):
         if not password:
             return jsonify({'error': 'Mot de passe non trouvé'}), 404
 
-        # Get expiration datetime from request
+        # Get expiration datetime and max views from request
         data = request.get_json()
         expires_at = datetime.fromisoformat(data.get('expires_at').replace('Z', '+00:00'))
+        max_views = int(data.get('max_views', 1))  # Default to 1 view if not specified
+        
+        # Validate max views
+        if max_views < 1 or max_views > 10:
+            return jsonify({'error': 'Le nombre de vues doit être entre 1 et 10'}), 400
         
         # Convert to Paris timezone
         expires_at = paris_tz.localize(expires_at)
@@ -263,7 +270,9 @@ def share_password(password_id):
         shared_password = SharedPassword(
             password_id=password.id,
             token=token,
-            expires_at=expires_at
+            expires_at=expires_at,
+            max_views=max_views,
+            current_views=0
         )
         
         db.session.add(shared_password)
@@ -275,7 +284,8 @@ def share_password(password_id):
         return jsonify({
             'success': True,
             'share_url': share_url,
-            'expires_at': shared_password.expires_at.astimezone(paris_tz).isoformat()
+            'expires_at': shared_password.expires_at.astimezone(paris_tz).isoformat(),
+            'max_views': max_views
         })
     except Exception as e:
         db.session.rollback()
@@ -295,13 +305,25 @@ def view_shared_password(token):
                                  password=None,
                                  expires_at=None)
         
+        # Check if max views reached
+        if shared.current_views >= shared.max_views:
+            return render_template('shared_password.html', 
+                                 error='Ce lien a atteint le nombre maximum de vues autorisées.',
+                                 password=None,
+                                 expires_at=None)
+        
+        # Increment view count
+        shared.current_views += 1
+        db.session.commit()
+        
         # Get the password details
         password = shared.password
         
         return render_template('shared_password.html', 
                              password=password, 
                              expires_at=shared.expires_at.astimezone(paris_tz),
-                             error=None)
+                             error=None,
+                             views_remaining=shared.max_views - shared.current_views)
     except Exception as e:
         return render_template('shared_password.html', 
                              error=str(e),
