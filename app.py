@@ -396,27 +396,26 @@ def add_category():
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)})
 
-@app.route('/delete_category/<int:category_id>', methods=['DELETE'])
+@app.route('/delete_category/<int:id>', methods=['DELETE'])
 @login_required
-def delete_category(category_id):
+def delete_category(id):
     try:
-        category = Category.query.get_or_404(category_id)
+        # Check if category exists and belongs to user
+        category = Category.query.filter_by(id=id, user_id=current_user.id).first()
+        if not category:
+            return jsonify({'success': False, 'error': 'Catégorie non trouvée'}), 404
+            
+        # Update all passwords in this category to have no category
+        Password.query.filter_by(category_id=id, user_id=current_user.id).update({'category_id': None})
         
-        # Check if user owns the category
-        if category.user_id != current_user.id:
-            return jsonify({'success': False, 'error': 'Non autorisé'})
-        
-        # Check if category has passwords
-        if category.passwords:
-            return jsonify({'success': False, 'error': 'Impossible de supprimer une catégorie contenant des mots de passe'})
-        
+        # Delete the category
         db.session.delete(category)
         db.session.commit()
         
         return jsonify({'success': True})
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)})
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/update_category/<int:id>', methods=['POST'])
 @login_required
