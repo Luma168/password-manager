@@ -1,0 +1,533 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de bord - Gestionnaire de Mots de Passe{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Mes Mots de Passe</h1>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="input-group">
+                <span class="input-group-text bg-white">
+                    <i class="fas fa-search text-muted"></i>
+                </span>
+                <input type="text" class="form-control" id="searchInput" placeholder="Rechercher un mot de passe...">
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Titre</th>
+                            <th>Nom d'utilisateur</th>
+                            <th>Catégorie</th>
+                            <th>Dernière modification</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for password in passwords %}
+                        <tr data-category="{{ password.category or '' }}">
+                            <td class="fw-medium">{{ password.title }}</td>
+                            <td>{{ password.username }}</td>
+                            <td>
+                                <span class="badge bg-secondary text-white">
+                                    {{ password.category or 'Non catégorisé' }}
+                                </span>
+                            </td>
+                            <td class="text-muted">{{ password.last_modified.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td class="text-end">
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary view-password" data-id="{{ password.id }}" title="Voir">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning edit-password" data-id="{{ password.id }}" title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger delete-password" data-id="{{ password.id }}" title="Supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ajout de mot de passe -->
+<div class="modal fade" id="addPasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ajouter un mot de passe</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addPasswordForm">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Titre</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Nom d'utilisateur</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Mot de passe</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="password" name="password" required>
+                            <button class="btn btn-outline-secondary toggle-password" type="button">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" id="generatePassword">
+                                <i class="fas fa-random"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Catégorie</label>
+                        <select class="form-select" id="category" name="category">
+                            <option value="">Sélectionner une catégorie</option>
+                            <option value="travail">Travail</option>
+                            <option value="personnel">Personnel</option>
+                            <option value="banque">Banque</option>
+                            <option value="social">Réseaux sociaux</option>
+                            <option value="autre">Autre</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Ajouter des notes..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="savePassword">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Édition de mot de passe -->
+<div class="modal fade" id="editPasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Modifier le mot de passe</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editPasswordForm">
+                    <input type="hidden" id="edit_id" name="id">
+                    <div class="mb-3">
+                        <label for="edit_title" class="form-label">Titre</label>
+                        <input type="text" class="form-control" id="edit_title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_username" class="form-label">Nom d'utilisateur</label>
+                        <input type="text" class="form-control" id="edit_username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_password" class="form-label">Mot de passe</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="edit_password" name="password" required>
+                            <button class="btn btn-outline-secondary toggle-password" type="button">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" id="generateEditPassword">
+                                <i class="fas fa-random"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_category" class="form-label">Catégorie</label>
+                        <select class="form-select" id="edit_category" name="category">
+                            <option value="">Sélectionner une catégorie</option>
+                            <option value="travail">Travail</option>
+                            <option value="personnel">Personnel</option>
+                            <option value="banque">Banque</option>
+                            <option value="social">Réseaux sociaux</option>
+                            <option value="autre">Autre</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="edit_notes" name="notes" rows="3" placeholder="Ajouter des notes..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="updatePassword">Mettre à jour</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Affichage du mot de passe -->
+<div class="modal fade" id="viewPasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Détails du mot de passe</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Titre</label>
+                    <p id="view_title" class="form-control-static"></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Nom d'utilisateur</label>
+                    <p id="view_username" class="form-control-static"></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Mot de passe</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="view_password" readonly>
+                        <button class="btn btn-outline-secondary toggle-password" type="button">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Catégorie</label>
+                    <p id="view_category" class="form-control-static"></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Notes</label>
+                    <p id="view_notes" class="form-control-static"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Menu contextuel personnalisé -->
+<div id="contextMenu" class="context-menu" style="display: none;">
+    <div class="context-menu-item" data-action="copy-username">
+        <i class="fas fa-user me-2"></i>Copier le nom d'utilisateur
+    </div>
+    <div class="context-menu-item" data-action="copy-password">
+        <i class="fas fa-key me-2"></i>Copier le mot de passe
+    </div>
+    <div class="context-menu-item" data-action="copy-notes">
+        <i class="fas fa-sticky-note me-2"></i>Copier les notes
+    </div>
+</div>
+
+<style>
+.table th {
+    font-weight: 600;
+    font-size: 0.875rem;
+    background-color: #f8f9fa;
+}
+
+.table td {
+    font-size: 0.875rem;
+}
+
+.badge {
+    font-weight: 500;
+    padding: 0.5em 0.75em;
+}
+
+.btn-group .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+/* Context menu styles */
+.context-menu {
+    position: fixed;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+    z-index: 1000;
+    min-width: 200px;
+    display: none;
+}
+
+.context-menu-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    color: #333;
+}
+
+.context-menu-item:hover {
+    background-color: #f8f9fa;
+}
+
+.context-menu-item i {
+    width: 20px;
+    text-align: center;
+}
+</style>
+
+<script>
+// Fonction pour générer un mot de passe aléatoire
+function generateRandomPassword() {
+    const length = 16;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
+    let password = "";
+    for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * charset.length);
+        password += charset[randomIndex];
+    }
+    return password;
+}
+
+// Gestionnaire pour le bouton de génération de mot de passe
+document.getElementById('generatePassword').addEventListener('click', function() {
+    document.getElementById('password').value = generateRandomPassword();
+});
+
+document.getElementById('generateEditPassword').addEventListener('click', function() {
+    document.getElementById('edit_password').value = generateRandomPassword();
+});
+
+// Gestionnaire pour la recherche
+document.getElementById('searchInput').addEventListener('keyup', function() {
+    const searchText = this.value.toLowerCase();
+    const rows = document.querySelectorAll('tbody tr');
+    
+    rows.forEach(row => {
+        const title = row.cells[0].textContent.toLowerCase();
+        const username = row.cells[1].textContent.toLowerCase();
+        const category = row.cells[2].textContent.toLowerCase();
+        
+        if (title.includes(searchText) || username.includes(searchText) || category.includes(searchText)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+// Gestionnaire pour l'ajout de mot de passe
+document.getElementById('savePassword').addEventListener('click', function() {
+    const form = document.getElementById('addPasswordForm');
+    const formData = new FormData(form);
+    
+    fetch('/add_password', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erreur lors de l\'ajout du mot de passe');
+        }
+    });
+});
+
+// Gestionnaire pour la suppression de mot de passe
+document.querySelectorAll('.delete-password').forEach(button => {
+    button.addEventListener('click', function() {
+        if (confirm('Êtes-vous sûr de vouloir supprimer ce mot de passe ?')) {
+            const id = this.dataset.id;
+            fetch(`/delete_password/${id}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Erreur lors de la suppression du mot de passe');
+                }
+            });
+        }
+    });
+});
+
+// Gestionnaire pour l'édition de mot de passe
+document.querySelectorAll('.edit-password').forEach(button => {
+    button.addEventListener('click', function() {
+        const id = this.dataset.id;
+        // Récupérer les données du mot de passe
+        fetch(`/get_password/${id}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('edit_id').value = data.password.id;
+                document.getElementById('edit_title').value = data.password.title;
+                document.getElementById('edit_username').value = data.password.username;
+                document.getElementById('edit_category').value = data.password.category || '';
+                document.getElementById('edit_notes').value = data.password.notes || '';
+                
+                const editModal = new bootstrap.Modal(document.getElementById('editPasswordModal'));
+                editModal.show();
+            }
+        });
+    });
+});
+
+// Gestionnaire pour la mise à jour du mot de passe
+document.getElementById('updatePassword').addEventListener('click', function() {
+    const form = document.getElementById('editPasswordForm');
+    const formData = new FormData(form);
+    
+    fetch('/update_password', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erreur lors de la mise à jour du mot de passe');
+        }
+    });
+});
+
+// Fonction pour basculer la visibilité du mot de passe
+function togglePasswordVisibility(input, button) {
+    const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+    input.setAttribute('type', type);
+    const icon = button.querySelector('i');
+    icon.classList.toggle('fa-eye');
+    icon.classList.toggle('fa-eye-slash');
+}
+
+// Ajouter les gestionnaires d'événements pour les boutons de visibilité
+document.querySelectorAll('.toggle-password').forEach(button => {
+    button.addEventListener('click', function() {
+        const input = this.previousElementSibling;
+        togglePasswordVisibility(input, this);
+    });
+});
+
+// Gestionnaire pour l'affichage du mot de passe
+document.querySelectorAll('.view-password').forEach(button => {
+    button.addEventListener('click', function() {
+        const id = this.dataset.id;
+        // Récupérer les données du mot de passe
+        fetch(`/get_password/${id}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('view_title').textContent = data.password.title;
+                document.getElementById('view_username').textContent = data.password.username;
+                document.getElementById('view_password').value = data.password.password;
+                document.getElementById('view_category').textContent = data.password.category || 'Non catégorisé';
+                document.getElementById('view_notes').textContent = data.password.notes || '';
+                
+                const viewModal = new bootstrap.Modal(document.getElementById('viewPasswordModal'));
+                viewModal.show();
+            } else {
+                alert('Erreur lors de la récupération du mot de passe');
+            }
+        });
+    });
+});
+
+// Gestion du menu contextuel
+const contextMenu = document.getElementById('contextMenu');
+let selectedRow = null;
+
+// Fonction pour copier le texte dans le presse-papiers
+async function copyToClipboard(text) {
+    try {
+        await navigator.clipboard.writeText(text);
+        // Afficher une notification de succès
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-success position-fixed top-0 end-0 m-3';
+        notification.style.zIndex = '9999';
+        notification.textContent = 'Copié dans le presse-papiers !';
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 2000);
+    } catch (err) {
+        console.error('Erreur lors de la copie:', err);
+    }
+}
+
+// Gestionnaire pour le clic droit sur les lignes du tableau
+document.querySelectorAll('tbody tr').forEach(row => {
+    row.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        selectedRow = this;
+        
+        // Positionner le menu contextuel
+        contextMenu.style.display = 'block';
+        contextMenu.style.left = e.pageX + 'px';
+        contextMenu.style.top = e.pageY + 'px';
+    });
+});
+
+// Gestionnaire pour les actions du menu contextuel
+contextMenu.addEventListener('click', async function(e) {
+    const action = e.target.closest('.context-menu-item')?.dataset.action;
+    if (!action || !selectedRow) return;
+
+    const id = selectedRow.querySelector('.view-password').dataset.id;
+    
+    try {
+        const response = await fetch(`/get_password/${id}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            if (action === 'copy-username') {
+                await copyToClipboard(data.password.username);
+            } else if (action === 'copy-password') {
+                await copyToClipboard(data.password.password);
+            } else if (action === 'copy-notes') {
+                await copyToClipboard(data.password.notes || '');
+            }
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+    }
+    
+    contextMenu.style.display = 'none';
+});
+
+// Fermer le menu contextuel lors d'un clic ailleurs
+document.addEventListener('click', function(e) {
+    if (!contextMenu.contains(e.target)) {
+        contextMenu.style.display = 'none';
+    }
+});
+
+// Gestionnaire pour le filtrage par catégorie
+document.querySelectorAll('.category-filter').forEach(link => {
+    link.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Mettre à jour la classe active
+        document.querySelectorAll('.category-filter').forEach(l => l.classList.remove('active'));
+        this.classList.add('active');
+        
+        const category = this.dataset.category;
+        const rows = document.querySelectorAll('tbody tr');
+        
+        rows.forEach(row => {
+            if (category === '' || row.dataset.category === category) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

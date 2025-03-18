@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil - Gestionnaire de Mots de Passe{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+        <h1 class="display-4 mb-4">Bienvenue sur votre Gestionnaire de Mots de Passe</h1>
+        <p class="lead mb-4">Une solution sécurisée pour gérer tous vos mots de passe en un seul endroit.</p>
+        
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
+                        <h3>Sécurité Maximale</h3>
+                        <p>Chiffrement AES-256 pour protéger vos données sensibles</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <i class="fas fa-key fa-3x text-primary mb-3"></i>
+                        <h3>Gestion Simplifiée</h3>
+                        <p>Stockez et gérez tous vos mots de passe en un clic</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <i class="fas fa-share-alt fa-3x text-primary mb-3"></i>
+                        <h3>Partage Sécurisé</h3>
+                        <p>Partagez vos mots de passe de manière sécurisée</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if not current_user.is_authenticated %}
+        <div class="d-grid gap-2 d-md-flex justify-content-center">
+            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4 me-md-2">
+                <i class="fas fa-user-plus me-2"></i>Créer un compte
+            </a>
+            <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg px-4">
+                <i class="fas fa-sign-in-alt me-2"></i>Se connecter
+            </a>
+        </div>
+        {% else %}
+        <div class="d-grid gap-2 d-md-flex justify-content-center">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-4">
+                <i class="fas fa-home me-2"></i>Accéder à mon tableau de bord
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 
