@@ -11,6 +11,7 @@ import base64
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from flask_wtf.csrf import CSRFProtect
+import pytz
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
@@ -18,6 +19,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///password_manager.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['WTF_CSRF_ENABLED'] = True
 app.config['WTF_CSRF_SECRET_KEY'] = os.urandom(24)
+
+# Set timezone to Paris
+paris_tz = pytz.timezone('Europe/Paris')
 
 db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
@@ -232,32 +236,46 @@ def password_generator():
 @login_required
 def share_password(password_id):
     try:
-        password = Password.query.get_or_404(password_id)
+        # Get the password
+        password = Password.query.filter_by(id=password_id, user_id=current_user.id).first()
+        if not password:
+            return jsonify({'error': 'Mot de passe non trouvé'}), 404
+
+        # Get expiration datetime from request
+        data = request.get_json()
+        expires_at = datetime.fromisoformat(data.get('expires_at').replace('Z', '+00:00'))
         
-        # Check if user owns the password
-        if password.user_id != current_user.id:
-            return jsonify({'error': 'Vous n\'êtes pas autorisé à partager ce mot de passe'}), 403
+        # Convert to Paris timezone
+        expires_at = paris_tz.localize(expires_at)
         
+        # Validate expiration datetime
+        now = datetime.now(paris_tz)
+        if expires_at <= now:
+            return jsonify({'error': 'La date d\'expiration doit être dans le futur'}), 400
+        
+        if expires_at > now + timedelta(days=90):
+            return jsonify({'error': 'La date d\'expiration ne peut pas être plus de 90 jours dans le futur'}), 400
+
         # Generate a unique token
         token = secrets.token_urlsafe(32)
         
         # Create shared password entry
-        share = SharedPassword(
-            password_id=password_id,
+        shared_password = SharedPassword(
+            password_id=password.id,
             token=token,
-            expires_at=datetime.utcnow() + timedelta(days=7)  # Link expires in 7 days
+            expires_at=expires_at
         )
         
-        db.session.add(share)
+        db.session.add(shared_password)
         db.session.commit()
         
-        # Generate the sharing URL
+        # Generate the share URL
         share_url = url_for('view_shared_password', token=token, _external=True)
         
         return jsonify({
             'success': True,
             'share_url': share_url,
-            'expires_at': share.expires_at.strftime('%Y-%m-%d %H:%M:%S')
+            'expires_at': shared_password.expires_at.astimezone(paris_tz).isoformat()
         })
     except Exception as e:
         db.session.rollback()
@@ -265,27 +283,30 @@ def share_password(password_id):
 
 @app.route('/shared/<token>')
 def view_shared_password(token):
-    share = SharedPassword.query.filter_by(token=token, is_active=True).first_or_404()
-    
-    # Check if the share has expired
-    if datetime.utcnow() > share.expires_at:
-        share.is_active = False
-        db.session.commit()
-        flash('Ce lien de partage a expiré.', 'error')
-        return redirect(url_for('login'))
-    
-    # Decrypt the password
     try:
-        f = Fernet(ENCRYPTION_KEY)
-        decrypted_password = f.decrypt(share.password.encrypted_password).decode()
+        # Get the shared password
+        shared = SharedPassword.query.filter_by(token=token).first_or_404()
+        
+        # Check if the link has expired
+        now = datetime.now(paris_tz)
+        if shared.expires_at.astimezone(paris_tz) < now:
+            return render_template('shared_password.html', 
+                                 error='Ce lien de partage a expiré.',
+                                 password=None,
+                                 expires_at=None)
+        
+        # Get the password details
+        password = shared.password
+        
+        return render_template('shared_password.html', 
+                             password=password, 
+                             expires_at=shared.expires_at.astimezone(paris_tz),
+                             error=None)
     except Exception as e:
-        flash('Erreur lors du décryptage du mot de passe.', 'error')
-        return redirect(url_for('login'))
-    
-    return render_template('shared_password.html',
-                         password=share.password,
-                         decrypted_password=decrypted_password,
-                         expires_at=share.expires_at)
+        return render_template('shared_password.html', 
+                             error=str(e),
+                             password=None,
+                             expires_at=None)
 
 @app.route('/revoke_share/<int:share_id>', methods=['POST'])
 @login_required
