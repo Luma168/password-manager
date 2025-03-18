@@ -8,6 +8,11 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">Mes Mots de Passe</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPasswordModal">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
     </div>
 
     <div class="row mb-4">
@@ -320,9 +325,14 @@
                             <i class="{{ category.icon }} me-2"></i>
                             {{ category.name }}
                         </div>
-                        <button class="btn btn-sm btn-danger delete-category" data-category-id="{{ category.id }}">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-primary edit-category" data-category-id="{{ category.id }}" data-category-name="{{ category.name }}" data-category-icon="{{ category.icon }}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger delete-category" data-category-id="{{ category.id }}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
@@ -838,7 +848,100 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // Add edit category functionality
+    document.addEventListener('click', async function(e) {
+        if (e.target.closest('.edit-category')) {
+            const button = e.target.closest('.edit-category');
+            const categoryId = button.dataset.categoryId;
+            const categoryName = button.dataset.categoryName;
+            const categoryIcon = button.dataset.categoryIcon;
+            
+            // Set the form values
+            document.getElementById('categoryName').value = categoryName;
+            selectedIcon = categoryIcon;
+            populateIconGrid();
+            
+            // Change the add button to update
+            const addButton = document.getElementById('addCategoryBtn');
+            addButton.textContent = 'Mettre à jour';
+            addButton.onclick = () => updateCategory(categoryId);
+            
+            // Scroll to the form
+            document.getElementById('categoryName').scrollIntoView({ behavior: 'smooth' });
+        }
+    });
 });
+
+async function updateCategory(categoryId) {
+    const name = document.getElementById('categoryName').value;
+    
+    if (!name) {
+        showAlert('Veuillez entrer un nom de catégorie', 'danger');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/update_category/${categoryId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({
+                name: name,
+                icon: selectedIcon
+            })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            // Update the category in the sidebar
+            const sidebarCategory = document.querySelector(`.sidebar .list-group a[href="/dashboard?category=${categoryId}"]`);
+            if (sidebarCategory) {
+                sidebarCategory.innerHTML = `
+                    <span><i class="${selectedIcon} me-2"></i>${name}</span>
+                    <span class="badge bg-primary rounded-pill">0</span>
+                `;
+            }
+            
+            // Update the category in the modal list
+            const categoryElement = document.querySelector(`[data-category-id="${categoryId}"]`);
+            if (categoryElement) {
+                categoryElement.querySelector('div').innerHTML = `
+                    <i class="${selectedIcon} me-2"></i>
+                    ${name}
+                `;
+            }
+            
+            // Update the category in all select elements
+            const selects = document.querySelectorAll('select[name="category_id"]');
+            selects.forEach(select => {
+                const option = select.querySelector(`option[value="${categoryId}"]`);
+                if (option) {
+                    option.innerHTML = `<i class="${selectedIcon}"></i> ${name}`;
+                }
+            });
+            
+            // Reset the form and button
+            document.getElementById('categoryName').value = '';
+            selectedIcon = 'fas fa-globe';
+            populateIconGrid();
+            
+            const addButton = document.getElementById('addCategoryBtn');
+            addButton.textContent = 'Ajouter';
+            addButton.onclick = addCategory;
+            
+            showAlert('Catégorie mise à jour avec succès', 'success');
+        } else {
+            throw new Error(data.error || 'Erreur lors de la mise à jour de la catégorie');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert(error.message || 'Erreur lors de la mise à jour de la catégorie', 'danger');
+    }
+}
 
 function addCategory() {
     const form = document.getElementById('addCategoryForm');
@@ -893,9 +996,14 @@ function addCategory() {
                     <i class="${data.category.icon} me-2"></i>
                     ${data.category.name}
                 </div>
-                <button class="btn btn-sm btn-danger delete-category" data-category-id="${data.category.id}">
-                    <i class="fas fa-trash"></i>
-                </button>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-primary edit-category" data-category-id="${data.category.id}" data-category-name="${data.category.name}" data-category-icon="${data.category.icon}">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger delete-category" data-category-id="${data.category.id}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             `;
             modalCategoriesList.appendChild(newModalCategory);
             

@@ -418,6 +418,44 @@ def delete_category(category_id):
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/update_category/<int:id>', methods=['POST'])
+@login_required
+def update_category(id):
+    try:
+        data = request.get_json()
+        name = data.get('name')
+        icon = data.get('icon')
+        
+        if not name:
+            return jsonify({'success': False, 'error': 'Le nom de la catégorie est requis'}), 400
+            
+        # Check if category exists and belongs to user
+        category = Category.query.filter_by(id=id, user_id=current_user.id).first()
+        if not category:
+            return jsonify({'success': False, 'error': 'Catégorie non trouvée'}), 404
+            
+        # Check if another category with the same name exists
+        existing_category = Category.query.filter(
+            Category.name == name,
+            Category.user_id == current_user.id,
+            Category.id != id
+        ).first()
+        if existing_category:
+            return jsonify({'success': False, 'error': 'Cette catégorie existe déjà'}), 400
+            
+        # Update category
+        category.name = name
+        category.icon = icon
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'category': category.to_dict()
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
