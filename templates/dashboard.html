@@ -781,6 +781,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', async function(e) {
         if (e.target.closest('.delete-category')) {
             const categoryId = e.target.closest('.delete-category').dataset.categoryId;
+            const categoryName = e.target.closest('.list-group-item').querySelector('div').textContent.trim();
             
             if (!confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) {
                 return;
@@ -797,22 +798,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Remove category from the list
+                    // Remove category from the sidebar list
+                    const sidebarCategory = document.querySelector(`.sidebar .list-group a[href="/dashboard?category=${categoryId}"]`);
+                    if (sidebarCategory) {
+                        sidebarCategory.remove();
+                    }
+
+                    // Remove category from the categories list in the modal
                     const categoryElement = document.querySelector(`[data-category-id="${categoryId}"]`);
-                    categoryElement.remove();
+                    if (categoryElement) {
+                        categoryElement.remove();
+                    }
 
                     // Remove category from select elements
-                    const selects = document.querySelectorAll('select');
+                    const selects = document.querySelectorAll('select[name="category_id"]');
                     selects.forEach(select => {
                         const option = select.querySelector(`option[value="${categoryId}"]`);
                         if (option) option.remove();
                     });
+
+                    // Update passwords in the table that had this category
+                    const rows = document.querySelectorAll('tbody tr');
+                    rows.forEach(row => {
+                        const categoryCell = row.querySelector('td:nth-child(3) .badge');
+                        if (categoryCell && categoryCell.textContent.trim() === categoryName) {
+                            categoryCell.textContent = 'Non catégorisé';
+                            categoryCell.classList.remove('bg-secondary');
+                            categoryCell.classList.add('bg-secondary');
+                        }
+                    });
+
+                    showAlert('Catégorie supprimée avec succès', 'success');
                 } else {
-                    alert(data.error || 'Erreur lors de la suppression de la catégorie');
+                    throw new Error(data.error || 'Erreur lors de la suppression de la catégorie');
                 }
             } catch (error) {
                 console.error('Erreur:', error);
-                alert('Erreur lors de la suppression de la catégorie');
+                showAlert(error.message || 'Erreur lors de la suppression de la catégorie', 'danger');
             }
         }
     });
@@ -850,12 +872,23 @@ function addCategory() {
     })
     .then(data => {
         if (data.success) {
-            // Add the new category to the list
-            const categoriesList = document.getElementById('categoriesList');
-            const newCategory = document.createElement('div');
-            newCategory.className = 'list-group-item d-flex justify-content-between align-items-center';
-            newCategory.dataset.categoryId = data.category.id;
+            // Add the new category to the sidebar list
+            const categoriesList = document.querySelector('.sidebar .list-group');
+            const newCategory = document.createElement('a');
+            newCategory.href = `/dashboard?category=${data.category.id}`;
+            newCategory.className = 'list-group-item list-group-item-action bg-dark text-white d-flex justify-content-between align-items-center';
             newCategory.innerHTML = `
+                <span><i class="${data.category.icon} me-2"></i>${data.category.name}</span>
+                <span class="badge bg-primary rounded-pill">0</span>
+            `;
+            categoriesList.appendChild(newCategory);
+            
+            // Add the new category to the categories list in the modal
+            const modalCategoriesList = document.getElementById('categoriesList');
+            const newModalCategory = document.createElement('div');
+            newModalCategory.className = 'list-group-item d-flex justify-content-between align-items-center';
+            newModalCategory.setAttribute('data-category-id', data.category.id);
+            newModalCategory.innerHTML = `
                 <div>
                     <i class="${data.category.icon} me-2"></i>
                     ${data.category.name}
@@ -864,7 +897,7 @@ function addCategory() {
                     <i class="fas fa-trash"></i>
                 </button>
             `;
-            categoriesList.appendChild(newCategory);
+            modalCategoriesList.appendChild(newModalCategory);
             
             // Add the new category to all category select elements
             const selects = document.querySelectorAll('select[name="category_id"]');
