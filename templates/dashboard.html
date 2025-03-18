@@ -75,6 +75,7 @@
             </div>
             <div class="modal-body">
                 <form id="addPasswordForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-3">
                         <label for="title" class="form-label">Titre</label>
                         <input type="text" class="form-control" id="title" name="title" required>
@@ -130,6 +131,7 @@
             </div>
             <div class="modal-body">
                 <form id="editPasswordForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" id="edit_id" name="id">
                     <div class="mb-3">
                         <label for="edit_title" class="form-label">Titre</label>
@@ -229,6 +231,34 @@
     <div class="context-menu-item" data-action="copy-notes">
         <i class="fas fa-sticky-note me-2"></i>Copier les notes
     </div>
+    <div class="context-menu-item" data-action="share-password">
+        <i class="fas fa-share-alt"></i> Partager le mot de passe
+    </div>
+</div>
+
+<!-- Add this modal for sharing -->
+<div class="modal fade" id="sharePasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Partager le mot de passe</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Le lien de partage sera valable pendant 7 jours.</p>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="shareUrl" readonly>
+                    <button class="btn btn-outline-secondary" type="button" id="copyShareUrl">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Le lien expirera le <span id="shareExpiry"></span>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -281,6 +311,114 @@
 </style>
 
 <script>
+// Initialize variables at the top
+let currentPasswordId = null;
+let shareModal;
+let contextMenu;
+let selectedRow = null;
+
+// Function to copy text to clipboard
+async function copyToClipboard(text) {
+    try {
+        await navigator.clipboard.writeText(text);
+        // Show success notification
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-success position-fixed top-0 end-0 m-3';
+        notification.style.zIndex = '9999';
+        notification.textContent = 'Copié dans le presse-papiers !';
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 2000);
+    } catch (err) {
+        console.error('Erreur lors de la copie:', err);
+    }
+}
+
+// Function to share password
+async function sharePassword(passwordId) {
+    try {
+        const response = await fetch(`/share_password/${passwordId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Erreur lors du partage');
+        }
+
+        const data = await response.json();
+        
+        // Update the share URL input
+        document.getElementById('shareUrl').value = data.share_url;
+        document.getElementById('shareExpiry').textContent = new Date(data.expires_at).toLocaleString();
+        
+        // Show the modal
+        shareModal.show();
+    } catch (error) {
+        console.error('Erreur:', error);
+        alert(error.message || 'Erreur lors du partage du mot de passe');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize modals and other elements
+    shareModal = new bootstrap.Modal(document.getElementById('sharePasswordModal'));
+    contextMenu = document.getElementById('contextMenu');
+    
+    // Add right-click event listeners to table rows
+    document.querySelectorAll('tbody tr').forEach(row => {
+        row.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            selectedRow = this;
+            currentPasswordId = this.querySelector('.view-password').dataset.id;
+            
+            // Position the context menu
+            contextMenu.style.display = 'block';
+            contextMenu.style.left = e.pageX + 'px';
+            contextMenu.style.top = e.pageY + 'px';
+        });
+    });
+
+    // Add click event listener for context menu items
+    contextMenu.addEventListener('click', async function(e) {
+        const action = e.target.closest('.context-menu-item')?.dataset.action;
+        if (!action || !selectedRow) return;
+
+        try {
+            const response = await fetch(`/get_password/${currentPasswordId}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                if (action === 'copy-username') {
+                    await copyToClipboard(data.password.username);
+                } else if (action === 'copy-password') {
+                    await copyToClipboard(data.password.password);
+                } else if (action === 'copy-notes') {
+                    await copyToClipboard(data.password.notes || '');
+                } else if (action === 'share-password') {
+                    await sharePassword(currentPasswordId);
+                }
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+        }
+        
+        contextMenu.style.display = 'none';
+    });
+
+    // Close context menu when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!contextMenu.contains(e.target)) {
+            contextMenu.style.display = 'none';
+        }
+    });
+
+    // ... rest of your existing DOMContentLoaded code ...
+});
+
 // Fonction pour générer un mot de passe aléatoire
 function generateRandomPassword() {
     const length = 16;
@@ -327,7 +465,10 @@ document.getElementById('savePassword').addEventListener('click', function() {
     
     fetch('/add_password', {
         method: 'POST',
-        body: formData
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        }
     })
     .then(response => response.json())
     .then(data => {
@@ -345,7 +486,10 @@ document.querySelectorAll('.delete-password').forEach(button => {
         if (confirm('Êtes-vous sûr de vouloir supprimer ce mot de passe ?')) {
             const id = this.dataset.id;
             fetch(`/delete_password/${id}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                }
             })
             .then(response => response.json())
             .then(data => {
@@ -388,7 +532,10 @@ document.getElementById('updatePassword').addEventListener('click', function() {
     
     fetch('/update_password', {
         method: 'POST',
-        body: formData
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        }
     })
     .then(response => response.json())
     .then(data => {
@@ -441,73 +588,6 @@ document.querySelectorAll('.view-password').forEach(button => {
     });
 });
 
-// Gestion du menu contextuel
-const contextMenu = document.getElementById('contextMenu');
-let selectedRow = null;
-
-// Fonction pour copier le texte dans le presse-papiers
-async function copyToClipboard(text) {
-    try {
-        await navigator.clipboard.writeText(text);
-        // Afficher une notification de succès
-        const notification = document.createElement('div');
-        notification.className = 'alert alert-success position-fixed top-0 end-0 m-3';
-        notification.style.zIndex = '9999';
-        notification.textContent = 'Copié dans le presse-papiers !';
-        document.body.appendChild(notification);
-        setTimeout(() => notification.remove(), 2000);
-    } catch (err) {
-        console.error('Erreur lors de la copie:', err);
-    }
-}
-
-// Gestionnaire pour le clic droit sur les lignes du tableau
-document.querySelectorAll('tbody tr').forEach(row => {
-    row.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
-        selectedRow = this;
-        
-        // Positionner le menu contextuel
-        contextMenu.style.display = 'block';
-        contextMenu.style.left = e.pageX + 'px';
-        contextMenu.style.top = e.pageY + 'px';
-    });
-});
-
-// Gestionnaire pour les actions du menu contextuel
-contextMenu.addEventListener('click', async function(e) {
-    const action = e.target.closest('.context-menu-item')?.dataset.action;
-    if (!action || !selectedRow) return;
-
-    const id = selectedRow.querySelector('.view-password').dataset.id;
-    
-    try {
-        const response = await fetch(`/get_password/${id}`);
-        const data = await response.json();
-        
-        if (data.success) {
-            if (action === 'copy-username') {
-                await copyToClipboard(data.password.username);
-            } else if (action === 'copy-password') {
-                await copyToClipboard(data.password.password);
-            } else if (action === 'copy-notes') {
-                await copyToClipboard(data.password.notes || '');
-            }
-        }
-    } catch (error) {
-        console.error('Erreur:', error);
-    }
-    
-    contextMenu.style.display = 'none';
-});
-
-// Fermer le menu contextuel lors d'un clic ailleurs
-document.addEventListener('click', function(e) {
-    if (!contextMenu.contains(e.target)) {
-        contextMenu.style.display = 'none';
-    }
-});
-
 // Gestionnaire pour le filtrage par catégorie
 document.querySelectorAll('.category-filter').forEach(link => {
     link.addEventListener('click', function(e) {
@@ -528,6 +608,21 @@ document.querySelectorAll('.category-filter').forEach(link => {
             }
         });
     });
+});
+
+// Add this to handle copying the share URL
+document.getElementById('copyShareUrl').addEventListener('click', function() {
+    const shareUrl = document.getElementById('shareUrl');
+    shareUrl.select();
+    document.execCommand('copy');
+    
+    // Show notification
+    const notification = document.createElement('div');
+    notification.className = 'alert alert-success position-fixed top-0 end-0 m-3';
+    notification.style.zIndex = '9999';
+    notification.textContent = 'Lien copié !';
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 2000);
 });
 </script>
 {% endblock %} 

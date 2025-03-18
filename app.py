@@ -4,15 +4,23 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from werkzeug.security import generate_password_hash, check_password_hash
 from cryptography.fernet import Fernet
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
+import secrets
+import base64
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from flask_wtf.csrf import CSRFProtect
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///password_manager.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['WTF_CSRF_ENABLED'] = True
+app.config['WTF_CSRF_SECRET_KEY'] = os.urandom(24)
 
 db = SQLAlchemy(app)
+csrf = CSRFProtect(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -62,6 +70,16 @@ class Password(db.Model):
 
     def get_password(self):
         return cipher_suite.decrypt(self.encrypted_password.encode()).decode()
+
+class SharedPassword(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    password_id = db.Column(db.Integer, db.ForeignKey('password.id'), nullable=False)
+    token = db.Column(db.String(64), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+
+    password = db.relationship('Password', backref=db.backref('shares', lazy=True))
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -209,6 +227,79 @@ def delete_password(password_id):
 @login_required
 def password_generator():
     return render_template('password_generator.html')
+
+@app.route('/share_password/<int:password_id>', methods=['POST'])
+@login_required
+def share_password(password_id):
+    try:
+        password = Password.query.get_or_404(password_id)
+        
+        # Check if user owns the password
+        if password.user_id != current_user.id:
+            return jsonify({'error': 'Vous n\'êtes pas autorisé à partager ce mot de passe'}), 403
+        
+        # Generate a unique token
+        token = secrets.token_urlsafe(32)
+        
+        # Create shared password entry
+        share = SharedPassword(
+            password_id=password_id,
+            token=token,
+            expires_at=datetime.utcnow() + timedelta(days=7)  # Link expires in 7 days
+        )
+        
+        db.session.add(share)
+        db.session.commit()
+        
+        # Generate the sharing URL
+        share_url = url_for('view_shared_password', token=token, _external=True)
+        
+        return jsonify({
+            'success': True,
+            'share_url': share_url,
+            'expires_at': share.expires_at.strftime('%Y-%m-%d %H:%M:%S')
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/shared/<token>')
+def view_shared_password(token):
+    share = SharedPassword.query.filter_by(token=token, is_active=True).first_or_404()
+    
+    # Check if the share has expired
+    if datetime.utcnow() > share.expires_at:
+        share.is_active = False
+        db.session.commit()
+        flash('Ce lien de partage a expiré.', 'error')
+        return redirect(url_for('login'))
+    
+    # Decrypt the password
+    try:
+        f = Fernet(ENCRYPTION_KEY)
+        decrypted_password = f.decrypt(share.password.encrypted_password).decode()
+    except Exception as e:
+        flash('Erreur lors du décryptage du mot de passe.', 'error')
+        return redirect(url_for('login'))
+    
+    return render_template('shared_password.html',
+                         password=share.password,
+                         decrypted_password=decrypted_password,
+                         expires_at=share.expires_at)
+
+@app.route('/revoke_share/<int:share_id>', methods=['POST'])
+@login_required
+def revoke_share(share_id):
+    share = SharedPassword.query.get_or_404(share_id)
+    
+    # Check if user owns the password
+    if share.password.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    share.is_active = False
+    db.session.commit()
+    
+    return jsonify({'success': True})
 
 if __name__ == '__main__':
     with app.app_context():
