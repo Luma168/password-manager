@@ -265,13 +265,20 @@
                 <div class="mb-3">
                     <label for="expirationDateTime" class="form-label">Date et heure d'expiration</label>
                     <input type="datetime-local" class="form-control" id="expirationDateTime" required>
-                    <div class="form-text">Le lien sera valable jusqu'à cette date et heure.</div>
                 </div>
-                <div class="input-group mb-3">
-                    <input type="text" class="form-control" id="shareUrl" readonly>
-                    <button class="btn btn-outline-secondary" type="button" id="copyShareUrl">
-                        <i class="fas fa-copy"></i>
-                    </button>
+                <div class="mb-3">
+                    <label for="maxViews" class="form-label">Nombre maximum de vues (optionnel)</label>
+                    <input type="number" class="form-control" id="maxViews" min="1" max="100" placeholder="Laisser vide pour pas de limite">
+                    <div class="form-text">Entre 1 et 100 vues. Si non spécifié, pas de limite.</div>
+                </div>
+                <div class="mb-3">
+                    <label for="shareUrl" class="form-label">Lien de partage</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="shareUrl" readonly>
+                        <button class="btn btn-outline-secondary" type="button" id="copyShareUrl">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
@@ -279,7 +286,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
                 <button type="button" class="btn btn-primary" id="confirmShare">Partager</button>
             </div>
         </div>
@@ -464,6 +471,9 @@ async function confirmShare() {
             return;
         }
 
+        const maxViewsInput = document.getElementById('maxViews');
+        const maxViews = maxViewsInput.value ? parseInt(maxViewsInput.value) : null;
+
         const response = await fetch(`/share_password/${currentPasswordId}`, {
             method: 'POST',
             headers: {
@@ -471,7 +481,8 @@ async function confirmShare() {
                 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
             },
             body: JSON.stringify({ 
-                expires_at: expirationDateTime
+                expires_at: expirationDateTime,
+                max_views: maxViews
             })
         });
 
@@ -636,10 +647,12 @@ document.getElementById('savePassword').addEventListener('click', function() {
 });
 
 // Gestionnaire pour la suppression de mot de passe
-document.querySelectorAll('.delete-password').forEach(button => {
-    button.addEventListener('click', function() {
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.delete-password')) {
+        const button = e.target.closest('.delete-password');
+        const id = button.dataset.id;
+        
         if (confirm('Êtes-vous sûr de vouloir supprimer ce mot de passe ?')) {
-            const id = this.dataset.id;
             fetch(`/delete_password/${id}`, {
                 method: 'DELETE',
                 headers: {
@@ -649,13 +662,22 @@ document.querySelectorAll('.delete-password').forEach(button => {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    location.reload();
+                    // Supprimer la ligne du tableau
+                    const row = button.closest('tr');
+                    row.remove();
+                    
+                    // Afficher l'alerte de succès
+                    showAlert('Mot de passe supprimé avec succès', 'success');
                 } else {
-                    alert('Erreur lors de la suppression du mot de passe');
+                    showAlert('Erreur lors de la suppression du mot de passe', 'danger');
                 }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                showAlert('Erreur lors de la suppression du mot de passe', 'danger');
             });
         }
-    });
+    }
 });
 
 // Gestionnaire pour l'édition de mot de passe
