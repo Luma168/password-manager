@@ -806,8 +806,16 @@ document.getElementById('copyShareUrl').addEventListener('click', function() {
 document.addEventListener('DOMContentLoaded', function() {
     // ... existing code ...
 
-    // Add category
-    document.getElementById('addCategoryBtn').addEventListener('click', addCategory);
+    // Add category button click handler
+    const addCategoryBtn = document.getElementById('addCategoryBtn');
+    addCategoryBtn.addEventListener('click', function() {
+        const categoryId = this.dataset.categoryId;
+        if (categoryId) {
+            updateCategory(categoryId);
+        } else {
+            addCategory();
+        }
+    });
 
     // Delete category
     document.addEventListener('click', async function(e) {
@@ -888,7 +896,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Change the add button to update
             const addButton = document.getElementById('addCategoryBtn');
             addButton.textContent = 'Mettre à jour';
-            addButton.onclick = () => updateCategory(categoryId);
+            addButton.dataset.categoryId = categoryId;
             
             // Scroll to the form
             document.getElementById('categoryName').scrollIntoView({ behavior: 'smooth' });
