@@ -741,10 +741,12 @@ document.querySelectorAll('.toggle-password').forEach(button => {
     });
 });
 
-// Gestionnaire pour l'affichage du mot de passe
-document.querySelectorAll('.view-password').forEach(button => {
-    button.addEventListener('click', function() {
-        const id = this.dataset.id;
+// Gestionnaire pour le bouton voir
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.view-password')) {
+        const button = e.target.closest('.view-password');
+        const id = button.dataset.id;
+        
         // Récupérer les données du mot de passe
         fetch(`/get_password/${id}`)
         .then(response => response.json())
@@ -753,7 +755,7 @@ document.querySelectorAll('.view-password').forEach(button => {
                 document.getElementById('view_title').textContent = data.password.title;
                 document.getElementById('view_username').textContent = data.password.username;
                 document.getElementById('view_password').value = data.password.password;
-                document.getElementById('view_category').textContent = data.password.category.name || 'Non catégorisé';
+                document.getElementById('view_category').textContent = data.password.category ? data.password.category.name : 'Non catégorisé';
                 document.getElementById('view_notes').textContent = data.password.notes || '';
                 
                 const viewModal = new bootstrap.Modal(document.getElementById('viewPasswordModal'));
@@ -761,8 +763,12 @@ document.querySelectorAll('.view-password').forEach(button => {
             } else {
                 alert('Erreur lors de la récupération du mot de passe');
             }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de la récupération du mot de passe');
         });
-    });
+    }
 });
 
 // Gestionnaire pour le filtrage par catégorie

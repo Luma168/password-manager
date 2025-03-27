@@ -262,10 +262,15 @@ def delete_password(password_id):
         if password.user_id != current_user.id:
             return jsonify({'success': False, 'error': 'Unauthorized'})
         
+        # Supprimer d'abord les entrées de partage associées
+        SharedPassword.query.filter_by(password_id=password_id).delete()
+        
+        # Puis supprimer le mot de passe
         db.session.delete(password)
         db.session.commit()
         return jsonify({'success': True})
     except Exception as e:
+        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/password_generator')
