@@ -1,0 +1,75 @@
+.table th {
+    font-weight: 600;
+    font-size: 0.875rem;
+    background-color: #f8f9fa;
+}
+
+.table td {
+    font-size: 0.875rem;
+}
+
+.badge {
+    font-weight: 500;
+    padding: 0.5em 0.75em;
+}
+
+.btn-group .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+/* Context menu styles */
+.context-menu {
+    position: fixed;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+    z-index: 1000;
+    min-width: 200px;
+    display: none;
+}
+
+.context-menu-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    color: #333;
+}
+
+.context-menu-item:hover {
+    background-color: #f8f9fa;
+}
+
+.context-menu-item i {
+    width: 20px;
+    text-align: center;
+}
+
+.icon-grid {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+}
+
+.icon-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+    cursor: pointer;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+}
+
+.icon-item:hover {
+    background-color: #f8f9fa;
+}
+
+.icon-item.selected {
+    background-color: #e9ecef;
+    border: 2px solid #0d6efd;
+}
+
+.icon-item i {
+    font-size: 1.25rem;
+}
