@@ -5,7 +5,10 @@ from app.models.shared_password import SharedPassword
 from flask import jsonify, request, render_template, url_for
 from flask_login import login_required, current_user
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+import pytz
+import secrets
+
+paris_tz = pytz.timezone('Europe/Paris')
 
 sharing = Blueprint('sharing', __name__)
 
@@ -58,7 +61,7 @@ def share_password(password_id):
         db.session.commit()
         
         # Generate the share URL
-        share_url = url_for('view_shared_password', token=token, _external=True)
+        share_url = url_for('sharing.view_shared_password', token=token, _external=True)
         
         return jsonify({
             'success': True,

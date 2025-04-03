@@ -1,94 +1,111 @@
 # Gestionnaire de Mots de Passe
 
-Une application web sécurisée pour gérer vos mots de passe, développée avec Flask.
+Une application de gestion de mots de passe développée avec Flask.
 
 ## Fonctionnalités
 
-- Création de compte utilisateur sécurisé
-- Stockage chiffré des mots de passe
-- Génération de mots de passe aléatoires
-- Catégorisation des mots de passe
-- Recherche de mots de passe
-- Interface utilisateur intuitive et responsive
-
-## Prérequis
-
-- Python 3.8 ou supérieur
-- pip (gestionnaire de paquets Python)
-
-## Installation
-
-1. Clonez le dépôt :
-```bash
-git clone [URL_DU_REPO]
-cd password-manager
-```
-
-2. Créez un environnement virtuel et activez-le :
-```bash
-python -m venv venv
-# Sur Windows
-venv\Scripts\activate
-# Sur Linux/Mac
-source venv/bin/activate
-```
-
-3. Installez les dépendances :
-```bash
-pip install -r requirements.txt
-```
-
-## Configuration
-
-1. Assurez-vous que toutes les dépendances sont installées
-2. La base de données SQLite sera créée automatiquement lors du premier lancement
-
-## Lancement de l'application
-
-1. Activez l'environnement virtuel si ce n'est pas déjà fait
-2. Lancez l'application :
-```bash
-python app.py
-```
-
-3. Ouvrez votre navigateur et accédez à :
-```
-http://localhost:5000
-```
-
-## Sécurité
-
-- Les mots de passe sont chiffrés avec AES-256
-- Les sessions utilisateur sont sécurisées
-- Protection contre les injections SQL
-- Validation des entrées utilisateur
-- Stockage sécurisé des mots de passe
+- **Stockage Sécurisé des Mots de Passe** : Tous les mots de passe sont chiffrés avant d'être stockés
+- **Authentification Utilisateur** : Système sécurisé de connexion et d'inscription
+- **Catégories de Mots de Passe** : Organisez vos mots de passe en catégories personnalisées
+- **Partage de Mots de Passe** : Partagez des mots de passe de manière sécurisée avec d'autres utilisateurs
+- **Générateur de Mots de Passe** : Générez des mots de passe forts et aléatoires
+- **Fonction de Recherche** : Trouvez rapidement des mots de passe par titre, nom d'utilisateur ou catégorie
+- **Design Responsive** : Fonctionne sur ordinateurs de bureau et appareils mobiles
 
 ## Structure du Projet
 
 ```
 password-manager/
-├── app.py              # Application principale
-├── requirements.txt    # Dépendances du projet
-├── README.md          # Documentation
-└── templates/         # Templates HTML
-    ├── base.html      # Template de base
-    ├── index.html     # Page d'accueil
-    ├── login.html     # Page de connexion
-    ├── register.html  # Page d'inscription
-    └── dashboard.html # Tableau de bord
+├── app/
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── user.py
+│   │   ├── password.py
+│   │   ├── category.py
+│   │   └── shared_password.py
+│   ├── routes/
+│   │   ├── __init__.py
+│   │   ├── auth.py
+│   │   ├── passwords.py
+│   │   ├── categories.py
+│   │   └── sharing.py
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── encryption.py
+│   │   ├── password_service.py
+│   │   └── sharing_service.py
+│   ├── utils/
+│   │   ├── __init__.py
+│   │   └── helpers.py
+│   ├── static/
+│   │   ├── css/
+│   │   │   ├── base.css
+│   │   │   ├── dashboard.css
+│   │   │   └── style.css
+│   │   └── js/
+│   │       ├── main.js
+│   │       ├── dashboard.js
+│   │       ├── passwords.js
+│   │       ├── categories.js
+│   │       └── sharing.js
+│   ├── templates/
+│   │   ├── base.html
+│   │   ├── login.html
+│   │   ├── register.html
+│   │   └── dashboard.html
+│   └── __init__.py
+├── instance/
+│   └── passwords.db
+├── config.py
+├── run.py
+├── requirements.txt
+└── encryption.key
 ```
 
-## Contribution
+## Installation
 
-Les contributions sont les bienvenues ! N'hésitez pas à :
+1. Clonez le dépôt :
+   ```
+   git clone https://github.com/yourusername/password-manager.git
+   cd password-manager
+   ```
 
-1. Fork le projet
-2. Créer une branche pour votre fonctionnalité
-3. Commiter vos changements
-4. Pousser vers la branche
-5. Ouvrir une Pull Request
+2. Créez un environnement virtuel :
+   ```
+   python -m venv venv
+   ```
 
-## Licence
+3. Activez l'environnement virtuel :
+   - Windows :
+     ```
+     venv\Scripts\activate
+     ```
+   - macOS/Linux :
+     ```
+     source venv/bin/activate
+     ```
 
-Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails. 
+4. Installez les dépendances :
+   ```
+   pip install -r requirements.txt
+   ```
+
+5. Lancez l'application :
+   ```
+   python run.py
+   ```
+
+## Fonctionnalités de Sécurité
+
+- **Chiffrement** : Tous les mots de passe sont chiffrés à l'aide du chiffrement symétrique Fernet
+- **Protection CSRF** : Tous les formulaires sont protégés contre les attaques CSRF
+- **Gestion Sécurisée des Sessions** : Les sessions utilisateur sont gérées de manière sécurisée
+- **Hachage des Mots de Passe** : Les mots de passe utilisateur sont hachés avec bcrypt
+- **Partage Sécurisé** : Les mots de passe partagés ont des dates d'expiration et des limites de visualisation
+
+## Technologies Utilisées
+
+- **Backend** : Flask, SQLAlchemy, Flask-Login
+- **Frontend** : HTML, CSS, JavaScript, Bootstrap 5
+- **Base de Données** : SQLite 
+- **Sécurité** : Flask-WTF, bcrypt, cryptography
