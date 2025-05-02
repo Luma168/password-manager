@@ -252,7 +252,10 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                location.reload();
+                showAlert('Mot de passe ajouté avec succès', 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
             } else {
                 showAlert('Erreur lors de l\'ajout du mot de passe', 'danger');
             }
@@ -330,7 +333,10 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                location.reload();
+                showAlert('Mot de passe mis à jour avec succès', 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
             } else {
                 showAlert('Erreur lors de la mise à jour du mot de passe', 'danger');
             }
