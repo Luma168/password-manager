@@ -1,6 +1,12 @@
 from app import db
 from datetime import datetime
 from app.services.encryption import cipher_suite
+import pytz
+
+paris_tz = pytz.timezone('Europe/Paris')
+
+def get_paris_time():
+    return datetime.now(paris_tz)
 
 class Password(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -9,8 +15,8 @@ class Password(db.Model):
     encrypted_password = db.Column(db.String(500), nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
     notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    last_modified = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_paris_time)
+    last_modified = db.Column(db.DateTime, default=get_paris_time, onupdate=get_paris_time)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def set_password(self, password):
