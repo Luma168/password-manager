@@ -19,7 +19,7 @@ def login():
         if user and user.check_password(request.form.get('password')):
             login_user(user)
             return redirect(url_for('passwords.dashboard'))
-        flash('Invalid username or password', 'danger')
+        flash('Nom d\'utilisateur ou mot de passe invalide', 'danger')
     return render_template('login.html')
 
 @auth.route('/register', methods=['GET', 'POST'])
@@ -30,11 +30,11 @@ def register():
         password = request.form.get('password')
         
         if User.query.filter_by(username=username).first():
-            flash('Username already exists', 'danger')
+            flash('Ce nom d\'utilisateur existe déjà', 'danger')
             return redirect(url_for('auth.register'))
         
         if User.query.filter_by(email=email).first():
-            flash('Email already registered', 'danger')
+            flash('Cet email est déjà enregistré', 'danger')
             return redirect(url_for('auth.register'))
         
         user = User(username=username, email=email)
@@ -42,7 +42,7 @@ def register():
         db.session.add(user)
         db.session.commit()
         
-        flash('Registration successful! Please login.', 'success')
+        flash('Inscription réussie ! Veuillez vous connecter.', 'success')
         return redirect(url_for('auth.login'))
     return render_template('register.html')
 
