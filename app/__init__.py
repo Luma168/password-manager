@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, current_user
 from flask_wtf.csrf import CSRFProtect
+import os
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -25,6 +26,12 @@ def create_app():
     from app.models.password import Password
     from app.models.category import Category
     from app.models.shared_password import SharedPassword
+    
+    # Create database if it doesn't exist
+    with app.app_context():
+        if not os.path.exists(app.instance_path):
+            os.makedirs(app.instance_path)
+        db.create_all()
     
     @login_manager.user_loader
     def load_user(user_id):
