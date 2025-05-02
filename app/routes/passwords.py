@@ -4,6 +4,7 @@ from app.models.password import Password
 from app.models.shared_password import SharedPassword
 from flask import jsonify, request, render_template
 from flask_login import login_required, current_user
+from app.models.password_history import PasswordHistory
 
 
 passwords = Blueprint('passwords', __name__)
@@ -81,6 +82,19 @@ def update_password():
         if password.user_id != current_user.id:
             return jsonify({'success': False, 'error': 'Unauthorized'})
         
+        # Create history entry before updating
+        history = PasswordHistory(
+            password_id=password.id,
+            title=password.title,
+            username=password.username,
+            encrypted_password=password.encrypted_password,
+            category_id=password.category_id,
+            notes=password.notes,
+            modified_by=current_user.id
+        )
+        db.session.add(history)
+        
+        # Update password
         password.title = request.form.get('title')
         password.username = request.form.get('username')
         password.category_id = request.form.get('category_id')
@@ -92,6 +106,23 @@ def update_password():
         db.session.commit()
         return jsonify({'success': True})
     except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)})
+
+@passwords.route('/get_password_history/<int:password_id>')
+@login_required
+def get_password_history(password_id):
+    try:
+        password = Password.query.get_or_404(password_id)
+        if password.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Unauthorized'})
+        
+        history = PasswordHistory.query.filter_by(password_id=password_id).order_by(PasswordHistory.modified_at.desc()).all()
+        return jsonify({
+            'success': True,
+            'history': [entry.to_dict() for entry in history]
+        })
+    except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
 @passwords.route('/delete_password/<int:password_id>', methods=['DELETE'])
@@ -102,10 +133,10 @@ def delete_password(password_id):
         if password.user_id != current_user.id:
             return jsonify({'success': False, 'error': 'Unauthorized'})
         
-        # Supprimer d'abord les entrées de partage associées
-        SharedPassword.query.filter_by(password_id=password_id).delete()
+        # Delete history entries first
+        PasswordHistory.query.filter_by(password_id=password_id).delete()
         
-        # Puis supprimer le mot de passe
+        # Then delete the password
         db.session.delete(password)
         db.session.commit()
         return jsonify({'success': True})

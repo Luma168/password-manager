@@ -38,7 +38,7 @@ async function confirmShare() {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 expires_at: expirationDateTime,
                 max_views: maxViews
             })
@@ -50,10 +50,10 @@ async function confirmShare() {
         }
 
         const data = await response.json();
-        
+
         // Update the share URL input
         document.getElementById('shareUrl').value = data.share_url;
-        
+
         // Format the expiration date in Paris timezone
         const expiryDate = new Date(data.expires_at);
         document.getElementById('shareExpiry').textContent = expiryDate.toLocaleString('fr-FR', {
@@ -64,7 +64,7 @@ async function confirmShare() {
             hour: '2-digit',
             minute: '2-digit'
         });
-        
+
         showAlert('Mot de passe partagé avec succès !', 'success');
     } catch (error) {
         console.error('Erreur:', error);
@@ -154,18 +154,18 @@ function populateIconGrid(filter = '') {
 }
 
 // Initialize everything when the DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Initialize modals and other elements
     shareModal = new bootstrap.Modal(document.getElementById('sharePasswordModal'));
     contextMenu = document.getElementById('contextMenu');
-    
+
     // Add right-click event listeners to table rows
     document.querySelectorAll('tbody tr').forEach(row => {
-        row.addEventListener('contextmenu', function(e) {
+        row.addEventListener('contextmenu', function (e) {
             e.preventDefault();
             selectedRow = this;
             currentPasswordId = this.querySelector('.view-password').dataset.id;
-            
+
             // Position the context menu
             contextMenu.style.display = 'block';
             contextMenu.style.left = e.pageX + 'px';
@@ -174,14 +174,14 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Add click event listener for context menu items
-    contextMenu.addEventListener('click', async function(e) {
+    contextMenu.addEventListener('click', async function (e) {
         const action = e.target.closest('.context-menu-item')?.dataset.action;
         if (!action || !selectedRow) return;
 
         try {
             const response = await fetch(`/get_password/${currentPasswordId}`);
             const data = await response.json();
-            
+
             if (data.success) {
                 if (action === 'copy-username') {
                     await copyToClipboard(data.password.username);
@@ -196,12 +196,12 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Erreur:', error);
         }
-        
+
         contextMenu.style.display = 'none';
     });
 
     // Close context menu when clicking outside
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         if (!contextMenu.contains(e.target)) {
             contextMenu.style.display = 'none';
         }
@@ -211,24 +211,24 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('confirmShare').addEventListener('click', confirmShare);
 
     // Add event listeners for password generation buttons
-    document.getElementById('generatePassword').addEventListener('click', function() {
+    document.getElementById('generatePassword').addEventListener('click', function () {
         document.getElementById('password').value = generateRandomPassword();
     });
 
-    document.getElementById('generateEditPassword').addEventListener('click', function() {
+    document.getElementById('generateEditPassword').addEventListener('click', function () {
         document.getElementById('edit_password').value = generateRandomPassword();
     });
 
     // Add event listener for search input
-    document.getElementById('searchInput').addEventListener('keyup', function() {
+    document.getElementById('searchInput').addEventListener('keyup', function () {
         const searchText = this.value.toLowerCase();
         const rows = document.querySelectorAll('tbody tr');
-        
+
         rows.forEach(row => {
             const title = row.cells[0].textContent.toLowerCase();
             const username = row.cells[1].textContent.toLowerCase();
             const category = row.cells[2].textContent.toLowerCase();
-            
+
             if (title.includes(searchText) || username.includes(searchText) || category.includes(searchText)) {
                 row.style.display = '';
             } else {
@@ -238,10 +238,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Add event listener for save password button
-    document.getElementById('savePassword').addEventListener('click', function() {
+    document.getElementById('savePassword').addEventListener('click', function () {
         const form = document.getElementById('addPasswordForm');
         const formData = new FormData(form);
-        
+
         fetch('/add_password', {
             method: 'POST',
             body: formData,
@@ -249,25 +249,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
             }
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showAlert('Mot de passe ajouté avec succès', 'success');
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
-            } else {
-                showAlert('Erreur lors de l\'ajout du mot de passe', 'danger');
-            }
-        });
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('Mot de passe ajouté avec succès', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showAlert('Erreur lors de l\'ajout du mot de passe', 'danger');
+                }
+            });
     });
 
     // Add event listener for delete password buttons
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         if (e.target.closest('.delete-password')) {
             const button = e.target.closest('.delete-password');
             const id = button.dataset.id;
-            
+
             if (confirm('Êtes-vous sûr de vouloir supprimer ce mot de passe ?')) {
                 fetch(`/delete_password/${id}`, {
                     method: 'DELETE',
@@ -275,54 +275,54 @@ document.addEventListener('DOMContentLoaded', function() {
                         'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
                     }
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Remove the row from the table
-                        const row = button.closest('tr');
-                        row.remove();
-                        
-                        // Show success alert
-                        showAlert('Mot de passe supprimé avec succès', 'success');
-                    } else {
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Remove the row from the table
+                            const row = button.closest('tr');
+                            row.remove();
+
+                            // Show success alert
+                            showAlert('Mot de passe supprimé avec succès', 'success');
+                        } else {
+                            showAlert('Erreur lors de la suppression du mot de passe', 'danger');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
                         showAlert('Erreur lors de la suppression du mot de passe', 'danger');
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    showAlert('Erreur lors de la suppression du mot de passe', 'danger');
-                });
+                    });
             }
         }
     });
 
     // Add event listeners for edit password buttons
     document.querySelectorAll('.edit-password').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const id = this.dataset.id;
             // Get password data
             fetch(`/get_password/${id}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('edit_id').value = data.password.id;
-                    document.getElementById('edit_title').value = data.password.title;
-                    document.getElementById('edit_username').value = data.password.username;
-                    document.getElementById('edit_category').value = data.password.category || '';
-                    document.getElementById('edit_notes').value = data.password.notes || '';
-                    
-                    const editModal = new bootstrap.Modal(document.getElementById('editPasswordModal'));
-                    editModal.show();
-                }
-            });
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('edit_id').value = data.password.id;
+                        document.getElementById('edit_title').value = data.password.title;
+                        document.getElementById('edit_username').value = data.password.username;
+                        document.getElementById('edit_category').value = data.password.category || '';
+                        document.getElementById('edit_notes').value = data.password.notes || '';
+
+                        const editModal = new bootstrap.Modal(document.getElementById('editPasswordModal'));
+                        editModal.show();
+                    }
+                });
         });
     });
 
     // Add event listener for update password button
-    document.getElementById('updatePassword').addEventListener('click', function() {
+    document.getElementById('updatePassword').addEventListener('click', function () {
         const form = document.getElementById('editPasswordForm');
         const formData = new FormData(form);
-        
+
         fetch('/update_password', {
             method: 'POST',
             body: formData,
@@ -330,69 +330,69 @@ document.addEventListener('DOMContentLoaded', function() {
                 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
             }
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showAlert('Mot de passe mis à jour avec succès', 'success');
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
-            } else {
-                showAlert('Erreur lors de la mise à jour du mot de passe', 'danger');
-            }
-        });
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('Mot de passe mis à jour avec succès', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showAlert('Erreur lors de la mise à jour du mot de passe', 'danger');
+                }
+            });
     });
 
     // Add event listeners for password visibility toggle buttons
     document.querySelectorAll('.toggle-password').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const input = this.previousElementSibling;
             togglePasswordVisibility(input, this);
         });
     });
 
     // Add event listener for view password buttons
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         if (e.target.closest('.view-password')) {
             const button = e.target.closest('.view-password');
             const id = button.dataset.id;
-            
+
             // Get password data
             fetch(`/get_password/${id}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('view_title').textContent = data.password.title;
-                    document.getElementById('view_username').textContent = data.password.username;
-                    document.getElementById('view_password').value = data.password.password;
-                    document.getElementById('view_category').textContent = data.password.category ? data.password.category.name : 'Non catégorisé';
-                    document.getElementById('view_notes').textContent = data.password.notes || '';
-                    
-                    const viewModal = new bootstrap.Modal(document.getElementById('viewPasswordModal'));
-                    viewModal.show();
-                } else {
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('view_title').textContent = data.password.title;
+                        document.getElementById('view_username').textContent = data.password.username;
+                        document.getElementById('view_password').value = data.password.password;
+                        document.getElementById('view_category').textContent = data.password.category ? data.password.category.name : 'Non catégorisé';
+                        document.getElementById('view_notes').textContent = data.password.notes || '';
+
+                        const viewModal = new bootstrap.Modal(document.getElementById('viewPasswordModal'));
+                        viewModal.show();
+                    } else {
+                        showAlert('Erreur lors de la récupération du mot de passe', 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
                     showAlert('Erreur lors de la récupération du mot de passe', 'danger');
-                }
-            })
-            .catch(error => {
-                console.error('Erreur:', error);
-                showAlert('Erreur lors de la récupération du mot de passe', 'danger');
-            });
+                });
         }
     });
 
     // Add event listener for category filter links
     document.querySelectorAll('.category-filter').forEach(link => {
-        link.addEventListener('click', function(e) {
+        link.addEventListener('click', function (e) {
             e.preventDefault();
-            
+
             // Update active class
             document.querySelectorAll('.category-filter').forEach(l => l.classList.remove('active'));
             this.classList.add('active');
-            
+
             const category = this.dataset.category;
             const rows = document.querySelectorAll('tbody tr');
-            
+
             rows.forEach(row => {
                 if (category === '' || row.dataset.category === category) {
                     row.style.display = '';
@@ -404,11 +404,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Add event listener for copy share URL button
-    document.getElementById('copyShareUrl').addEventListener('click', function() {
+    document.getElementById('copyShareUrl').addEventListener('click', function () {
         const shareUrl = document.getElementById('shareUrl');
         shareUrl.select();
         document.execCommand('copy');
-        
+
         // Show notification
         showAlert('Lien copié !', 'success');
     });
@@ -416,7 +416,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Category management
     // Add category button click handler
     const addCategoryBtn = document.getElementById('addCategoryBtn');
-    addCategoryBtn.addEventListener('click', function() {
+    addCategoryBtn.addEventListener('click', function () {
         const categoryId = this.dataset.categoryId;
         if (categoryId) {
             updateCategory(categoryId);
@@ -426,11 +426,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Delete category
-    document.addEventListener('click', async function(e) {
+    document.addEventListener('click', async function (e) {
         if (e.target.closest('.delete-category')) {
             const categoryId = e.target.closest('.delete-category').dataset.categoryId;
             const categoryName = e.target.closest('.list-group-item').querySelector('div').textContent.trim();
-            
+
             if (!confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ? Les mots de passe de cette catégorie seront marqués comme non catégorisés.')) {
                 return;
             }
@@ -444,7 +444,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 const data = await response.json();
-                
+
                 if (data.success) {
                     // Remove category from the sidebar list
                     const sidebarCategory = document.querySelector(`.sidebar .list-group a[href="/dashboard?category=${categoryId}"]`);
@@ -489,23 +489,23 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Add edit category functionality
-    document.addEventListener('click', async function(e) {
+    document.addEventListener('click', async function (e) {
         if (e.target.closest('.edit-category')) {
             const button = e.target.closest('.edit-category');
             const categoryId = button.dataset.categoryId;
             const categoryName = button.dataset.categoryName;
             const categoryIcon = button.dataset.categoryIcon;
-            
+
             // Set the form values
             document.getElementById('categoryName').value = categoryName;
             selectedIcon = categoryIcon;
             populateIconGrid();
-            
+
             // Change the add button to update
             const addButton = document.getElementById('addCategoryBtn');
             addButton.textContent = 'Mettre à jour';
             addButton.dataset.categoryId = categoryId;
-            
+
             // Scroll to the form
             document.getElementById('categoryName').scrollIntoView({ behavior: 'smooth' });
         }
@@ -519,17 +519,69 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize icon grid
     populateIconGrid();
+
+    // Add event listeners for view history buttons
+    document.querySelectorAll('.view-history').forEach(button => {
+        button.addEventListener('click', function () {
+            const passwordId = this.dataset.id;
+            fetch(`/get_password_history/${passwordId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const tbody = document.getElementById('historyTableBody');
+                        tbody.innerHTML = '';
+                        data.history.forEach(entry => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${new Date(entry.modified_at).toLocaleString('fr-FR', { timeZone: 'Europe/Paris' })}</td>
+                                <td>${entry.title}</td>
+                                <td>${entry.username}</td>
+                                <td><input type="password" class="form-control form-control-sm history-password" value="${entry.password}" readonly></td>
+                                <td>${entry.category ? entry.category.name : 'Non catégorisé'}</td>
+                                <td>${entry.notes || ''}</td>
+                                <td>${entry.modified_by}</td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+
+                        // Add event listener for the global toggle button
+                        const toggleBtn = document.getElementById('toggleAllPasswords');
+                        const passwordInputs = document.querySelectorAll('.history-password');
+                        let allVisible = false;
+
+                        toggleBtn.addEventListener('click', () => {
+                            allVisible = !allVisible;
+                            passwordInputs.forEach(input => {
+                                input.type = allVisible ? 'text' : 'password';
+                            });
+                            toggleBtn.innerHTML = allVisible ?
+                                '<i class="fas fa-eye-slash"></i>' :
+                                '<i class="fas fa-eye"></i>';
+                        });
+
+                        const historyModal = new bootstrap.Modal(document.getElementById('historyModal'));
+                        historyModal.show();
+                    } else {
+                        showAlert('Erreur lors de la récupération de l\'historique', 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    showAlert('Erreur lors de la récupération de l\'historique', 'danger');
+                });
+        });
+    });
 });
 
 // Function to update category
 async function updateCategory(categoryId) {
     const name = document.getElementById('categoryName').value;
-    
+
     if (!name) {
         showAlert('Veuillez entrer un nom de catégorie', 'danger');
         return;
     }
-    
+
     try {
         const response = await fetch(`/update_category/${categoryId}`, {
             method: 'POST',
@@ -544,7 +596,7 @@ async function updateCategory(categoryId) {
         });
 
         const data = await response.json();
-        
+
         if (data.success) {
             // Update the category in the sidebar
             const sidebarCategory = document.querySelector(`.sidebar .list-group a[href="/dashboard?category=${categoryId}"]`);
@@ -554,7 +606,7 @@ async function updateCategory(categoryId) {
                     <span class="badge bg-primary rounded-pill">0</span>
                 `;
             }
-            
+
             // Update the category in the modal list
             const categoryElement = document.querySelector(`[data-category-id="${categoryId}"]`);
             if (categoryElement) {
@@ -563,7 +615,7 @@ async function updateCategory(categoryId) {
                     ${name}
                 `;
             }
-            
+
             // Update the category in all select elements
             const selects = document.querySelectorAll('select[name="category_id"]');
             selects.forEach(select => {
@@ -572,16 +624,16 @@ async function updateCategory(categoryId) {
                     option.innerHTML = `<i class="${selectedIcon}"></i> ${name}`;
                 }
             });
-            
+
             // Reset the form and button
             document.getElementById('categoryName').value = '';
             selectedIcon = 'fas fa-globe';
             populateIconGrid();
-            
+
             const addButton = document.getElementById('addCategoryBtn');
             addButton.textContent = 'Ajouter';
             addButton.onclick = addCategory;
-            
+
             showAlert('Catégorie mise à jour avec succès', 'success');
         } else {
             throw new Error(data.error || 'Erreur lors de la mise à jour de la catégorie');
@@ -596,20 +648,20 @@ async function updateCategory(categoryId) {
 function addCategory() {
     const form = document.getElementById('addCategoryForm');
     const formData = new FormData();
-    
+
     // Get the category name and icon
     const name = document.getElementById('categoryName').value;
-    
+
     if (!name) {
         showAlert('Veuillez entrer un nom de catégorie', 'danger');
         return;
     }
-    
+
     // Add the form data
     formData.append('name', name);
     formData.append('icon', selectedIcon);
     formData.append('csrf_token', document.querySelector('meta[name="csrf-token"]').content);
-    
+
     fetch('/add_category', {
         method: 'POST',
         body: formData,
@@ -617,31 +669,31 @@ function addCategory() {
             'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
         }
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Erreur réseau');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            // Add the new category to the sidebar list
-            const categoriesList = document.querySelector('.sidebar .list-group');
-            const newCategory = document.createElement('a');
-            newCategory.href = `/dashboard?category=${data.category.id}`;
-            newCategory.className = 'list-group-item list-group-item-action bg-dark text-white d-flex justify-content-between align-items-center';
-            newCategory.innerHTML = `
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erreur réseau');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Add the new category to the sidebar list
+                const categoriesList = document.querySelector('.sidebar .list-group');
+                const newCategory = document.createElement('a');
+                newCategory.href = `/dashboard?category=${data.category.id}`;
+                newCategory.className = 'list-group-item list-group-item-action bg-dark text-white d-flex justify-content-between align-items-center';
+                newCategory.innerHTML = `
                 <span><i class="${data.category.icon} me-2"></i>${data.category.name}</span>
                 <span class="badge bg-primary rounded-pill">0</span>
             `;
-            categoriesList.appendChild(newCategory);
-            
-            // Add the new category to the categories list in the modal
-            const modalCategoriesList = document.getElementById('categoriesList');
-            const newModalCategory = document.createElement('div');
-            newModalCategory.className = 'list-group-item d-flex justify-content-between align-items-center';
-            newModalCategory.setAttribute('data-category-id', data.category.id);
-            newModalCategory.innerHTML = `
+                categoriesList.appendChild(newCategory);
+
+                // Add the new category to the categories list in the modal
+                const modalCategoriesList = document.getElementById('categoriesList');
+                const newModalCategory = document.createElement('div');
+                newModalCategory.className = 'list-group-item d-flex justify-content-between align-items-center';
+                newModalCategory.setAttribute('data-category-id', data.category.id);
+                newModalCategory.innerHTML = `
                 <div>
                     <i class="${data.category.icon} me-2"></i>
                     ${data.category.name}
@@ -655,35 +707,35 @@ function addCategory() {
                     </button>
                 </div>
             `;
-            modalCategoriesList.appendChild(newModalCategory);
-            
-            // Add the new category to all category select elements
-            const selects = document.querySelectorAll('select[name="category_id"]');
-            const option = document.createElement('option');
-            option.value = data.category.id;
-            option.innerHTML = `<i class="${data.category.icon}"></i> ${data.category.name}`;
-            
-            selects.forEach(select => {
-                select.appendChild(option.cloneNode(true));
-            });
-            
-            // Reset the form and icon selection
-            form.reset();
-            selectedIcon = 'fas fa-globe';
-            populateIconGrid();
-            
-            // Close the modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('categoryModal'));
-            modal.hide();
-            
-            // Show success message
-            showAlert('Catégorie ajoutée avec succès', 'success');
-        } else {
-            throw new Error(data.error || 'Erreur lors de l\'ajout de la catégorie');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showAlert(error.message || 'Erreur lors de l\'ajout de la catégorie', 'danger');
-    });
+                modalCategoriesList.appendChild(newModalCategory);
+
+                // Add the new category to all category select elements
+                const selects = document.querySelectorAll('select[name="category_id"]');
+                const option = document.createElement('option');
+                option.value = data.category.id;
+                option.innerHTML = `<i class="${data.category.icon}"></i> ${data.category.name}`;
+
+                selects.forEach(select => {
+                    select.appendChild(option.cloneNode(true));
+                });
+
+                // Reset the form and icon selection
+                form.reset();
+                selectedIcon = 'fas fa-globe';
+                populateIconGrid();
+
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('categoryModal'));
+                modal.hide();
+
+                // Show success message
+                showAlert('Catégorie ajoutée avec succès', 'success');
+            } else {
+                throw new Error(data.error || 'Erreur lors de l\'ajout de la catégorie');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert(error.message || 'Erreur lors de l\'ajout de la catégorie', 'danger');
+        });
 }

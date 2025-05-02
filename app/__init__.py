@@ -26,6 +26,7 @@ def create_app():
     from app.models.password import Password
     from app.models.category import Category
     from app.models.shared_password import SharedPassword
+    from app.models.password_history import PasswordHistory
     
     # Create database if it doesn't exist
     with app.app_context():
