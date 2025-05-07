@@ -112,17 +112,3 @@ def view_shared_password(token):
                              error=str(e),
                              password=None,
                              expires_at=None)
-
-@sharing.route('/revoke_share/<int:share_id>', methods=['POST'])
-@login_required
-def revoke_share(share_id):
-    share = SharedPassword.query.get_or_404(share_id)
-    
-    # Check if user owns the password
-    if share.password.user_id != current_user.id:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    share.is_active = False
-    db.session.commit()
-    
-    return jsonify({'success': True})
