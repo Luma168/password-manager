@@ -571,6 +571,121 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
         });
     });
+
+    // Gestion de l'import/export
+    const exportPasswordsBtn = document.getElementById('exportPasswords');
+    const importPasswordsBtn = document.getElementById('importPasswords');
+    const confirmActionBtn = document.getElementById('confirmAction');
+    const importFileInput = document.getElementById('importFile');
+    const passwordConfirmModal = document.getElementById('passwordConfirmModal');
+
+    if (exportPasswordsBtn && passwordConfirmModal) {
+        exportPasswordsBtn.addEventListener('click', () => {
+            const actionTypeInput = document.getElementById('actionType');
+            if (actionTypeInput) actionTypeInput.value = 'export';
+            const modal = new bootstrap.Modal(passwordConfirmModal);
+            modal.show();
+        });
+    }
+
+    if (importPasswordsBtn && passwordConfirmModal) {
+        importPasswordsBtn.addEventListener('click', () => {
+            const actionTypeInput = document.getElementById('actionType');
+            if (actionTypeInput) actionTypeInput.value = 'import';
+            const modal = new bootstrap.Modal(passwordConfirmModal);
+            modal.show();
+        });
+    }
+
+    if (confirmActionBtn) {
+        confirmActionBtn.addEventListener('click', async () => {
+            const actionTypeInput = document.getElementById('actionType');
+            const accountPasswordInput = document.getElementById('accountPassword');
+            const passwordConfirmForm = document.getElementById('passwordConfirmForm');
+
+            if (!actionTypeInput || !accountPasswordInput || !passwordConfirmForm) return;
+
+            const actionType = actionTypeInput.value;
+            const password = accountPasswordInput.value;
+            const formData = new FormData(passwordConfirmForm);
+
+            if (actionType === 'export') {
+                try {
+                    const response = await fetch('/export-passwords', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'passwords.enc';
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+
+                        // Fermer le modal
+                        if (passwordConfirmModal) {
+                            const modal = bootstrap.Modal.getInstance(passwordConfirmModal);
+                            if (modal) modal.hide();
+                        }
+                        passwordConfirmForm.reset();
+                    } else {
+                        const data = await response.json();
+                        showAlert(data.error || 'Erreur lors de l\'exportation', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    showAlert('Erreur lors de l\'exportation', 'danger');
+                }
+            } else if (actionType === 'import' && importFileInput) {
+                importFileInput.click();
+            }
+        });
+    }
+
+    if (importFileInput) {
+        importFileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const passwordConfirmForm = document.getElementById('passwordConfirmForm');
+            if (!passwordConfirmForm) return;
+
+            const formData = new FormData(passwordConfirmForm);
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/import-passwords', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showAlert(data.message || 'Import réussi', 'success');
+                    window.location.reload();
+                } else {
+                    const data = await response.json();
+                    showAlert(data.error || 'Erreur lors de l\'importation', 'danger');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showAlert('Erreur lors de l\'importation', 'danger');
+            } finally {
+                // Réinitialiser le formulaire et fermer le modal
+                passwordConfirmForm.reset();
+                importFileInput.value = '';
+                if (passwordConfirmModal) {
+                    const modal = bootstrap.Modal.getInstance(passwordConfirmModal);
+                    if (modal) modal.hide();
+                }
+            }
+        });
+    }
 });
 
 // Function to update category

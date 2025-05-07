@@ -11,6 +11,14 @@
         class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">Mes Mots de Passe</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-outline-secondary" id="exportPasswords">
+                    <i class="fas fa-file-export"></i> Exporter
+                </button>
+                <button type="button" class="btn btn-outline-secondary" id="importPasswords">
+                    <i class="fas fa-file-import"></i> Importer
+                </button>
+            </div>
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPasswordModal">
                 <i class="fas fa-plus"></i>
             </button>
@@ -408,6 +416,32 @@
     </div>
 </div>
 
+<!-- Modal Confirmation de mot de passe pour import/export -->
+<div class="modal fade" id="passwordConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="passwordConfirmForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" id="actionType" name="action_type">
+                    <div class="mb-3">
+                        <label for="accountPassword" class="form-label">Mot de passe du compte</label>
+                        <input type="password" class="form-control" id="accountPassword" name="password" required>
+                    </div>
+                </form>
+                <input type="file" id="importFile" accept=".enc" style="display: none;">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="confirmAction">Confirmer</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 {% endblock %}
