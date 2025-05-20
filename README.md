@@ -66,7 +66,7 @@ password-manager/
 
 1. Clonez le dépôt :
    ```
-   git clone https://github.com/yourusername/password-manager.git
+   git clone https://github.com/Luma168/password-manager.git
    cd password-manager
    ```
 
