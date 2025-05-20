@@ -11,6 +11,7 @@ Une application de gestion de mots de passe développée avec Flask.
 - **Générateur de Mots de Passe** : Générez des mots de passe forts et aléatoires
 - **Fonction de Recherche** : Trouvez rapidement des mots de passe par titre, nom d'utilisateur ou catégorie
 - **Menu Contextuel Personnalisé** : Clic droit sur les mots de passe pour copier rapidement les champs (identifiant, mot de passe, notes) ou partager le mot de passe
+- **Import/Export de Données** : Importez et exportez vos mots de passe de manière sécurisée en utilisant le chiffrement Fernet, garantissant la protection des données même pendant le transfert
 
 ## Chiffrement des Données
 
