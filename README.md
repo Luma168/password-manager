@@ -10,7 +10,7 @@ Une application de gestion de mots de passe développée avec Flask.
 - **Partage de Mots de Passe** : Partagez des mots de passe de manière sécurisée avec d'autres utilisateurs
 - **Générateur de Mots de Passe** : Générez des mots de passe forts et aléatoires
 - **Fonction de Recherche** : Trouvez rapidement des mots de passe par titre, nom d'utilisateur ou catégorie
-- **Design Responsive** : Fonctionne sur ordinateurs de bureau et appareils mobiles
+- **Menu Contextuel Personnalisé** : Clic droit sur les mots de passe pour copier rapidement les champs (identifiant, mot de passe, notes) ou partager le mot de passe
 
 ## Chiffrement des Données
 
