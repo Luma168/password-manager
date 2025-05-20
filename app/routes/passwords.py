@@ -26,9 +26,6 @@ def dashboard():
     passwords = query.all()
     return render_template('dashboard.html', passwords=passwords)
 
-
-
-# Routes API pour la gestion des mots de passe
 @passwords.route('/add_password', methods=['POST'])
 @login_required
 def add_password():
@@ -99,7 +96,6 @@ def update_password():
         )
         db.session.add(history)
         
-        # Update password
         password.title = request.form.get('title')
         password.username = request.form.get('username')
         password.category_id = request.form.get('category_id')
@@ -138,13 +134,12 @@ def delete_password(password_id):
         if password.user_id != current_user.id:
             return jsonify({'success': False, 'error': 'Unauthorized'})
         
-        # Delete shared passwords first
+        # Delete shared passwords
         SharedPassword.query.filter_by(password_id=password_id).delete()
         
         # Delete history entries
         PasswordHistory.query.filter_by(password_id=password_id).delete()
         
-        # Then delete the password
         db.session.delete(password)
         db.session.commit()
         return jsonify({'success': True})
@@ -162,22 +157,18 @@ def password_generator():
 def export_passwords():
     account_password = request.form.get('password')
     
-    # Vérifier le mot de passe
+    # Vérifier le mot de passe de l'utilisateur
     if not current_user.check_password(account_password):
         return jsonify({'error': 'Mot de passe incorrect'}), 401
     
-    # Récupérer tous les mots de passe de l'utilisateur
     passwords = Password.query.filter_by(user_id=current_user.id).all()
     
-    # Préparer les données pour l'export
     export_data = {
-        'version': '1.0',
         'export_date': datetime.now().isoformat(),
         'passwords': []
     }
     
     for pwd in passwords:
-        # Récupérer l'historique du mot de passe
         history = PasswordHistory.query.filter_by(password_id=pwd.id).order_by(PasswordHistory.modified_at.desc()).all()
         
         password_data = {
@@ -198,11 +189,9 @@ def export_passwords():
         }
         export_data['passwords'].append(password_data)
     
-    # Convertir les données en JSON et les chiffrer
     json_data = json.dumps(export_data, ensure_ascii=False).encode('utf-8')
     encrypted_data = cipher_suite.encrypt(json_data)
     
-    # Créer la réponse avec les données chiffrées
     response = make_response(encrypted_data)
     response.headers['Content-Type'] = 'application/octet-stream'
     response.headers['Content-Disposition'] = 'attachment; filename=passwords.enc'
@@ -226,7 +215,6 @@ def import_passwords():
         return jsonify({'error': 'Mot de passe incorrect'}), 401
     
     try:
-        # Lire et déchiffrer le fichier
         encrypted_data = file.read()
         try:
             decrypted_data = cipher_suite.decrypt(encrypted_data)
@@ -237,10 +225,6 @@ def import_passwords():
         if not isinstance(import_data, dict) or 'passwords' not in import_data:
             return jsonify({'error': 'Format de fichier invalide'}), 400
         
-        # Vérifier la version du fichier
-        if import_data.get('version') != '1.0':
-            return jsonify({'error': 'Version de fichier non supportée'}), 400
-        
         # Importer chaque mot de passe
         for pwd_data in import_data['passwords']:
             # Vérifier les champs requis
@@ -248,7 +232,6 @@ def import_passwords():
             if not all(field in pwd_data for field in required_fields):
                 continue
             
-            # Créer un nouveau mot de passe
             new_password = Password(
                 user_id=current_user.id,
                 title=pwd_data['title'],
@@ -257,16 +240,14 @@ def import_passwords():
             )
             new_password.set_password(pwd_data['password'])
             
-            # Set creation and modification dates if available
             if 'created_at' in pwd_data:
                 new_password.created_at = datetime.fromisoformat(pwd_data['created_at'])
             if 'last_modified' in pwd_data:
                 new_password.last_modified = datetime.fromisoformat(pwd_data['last_modified'])
             
             db.session.add(new_password)
-            db.session.flush()  # Pour obtenir l'ID du nouveau mot de passe
+            db.session.flush()
             
-            # Importer l'historique si présent
             if 'history' in pwd_data:
                 for history_entry in pwd_data['history']:
                     history = PasswordHistory(

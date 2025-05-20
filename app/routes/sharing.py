@@ -16,20 +16,16 @@ sharing = Blueprint('sharing', __name__)
 @login_required
 def share_password(password_id):
     try:
-        # Get the password
         password = Password.query.filter_by(id=password_id, user_id=current_user.id).first()
         if not password:
             return jsonify({'error': 'Mot de passe non trouvé'}), 404
 
-        # Get expiration datetime and max views from request
         data = request.get_json()
         expires_at = datetime.fromisoformat(data.get('expires_at').replace('Z', '+00:00'))
         max_views = data.get('max_views')
         
-        # Convert to Paris timezone
         expires_at = paris_tz.localize(expires_at)
         
-        # Validate expiration datetime
         now = datetime.now(paris_tz)
         if expires_at <= now:
             return jsonify({'error': 'La date d\'expiration doit être dans le futur'}), 400
@@ -37,7 +33,6 @@ def share_password(password_id):
         if expires_at > now + timedelta(days=90):
             return jsonify({'error': 'La date d\'expiration ne peut pas être plus de 90 jours dans le futur'}), 400
 
-        # Validate max views if provided
         if max_views is not None:
             try:
                 max_views = int(max_views)
@@ -49,7 +44,6 @@ def share_password(password_id):
         # Generate a unique token
         token = secrets.token_urlsafe(32)
         
-        # Create shared password entry
         shared_password = SharedPassword(
             password_id=password.id,
             token=token,
@@ -76,7 +70,6 @@ def share_password(password_id):
 @sharing.route('/shared/<token>')
 def view_shared_password(token):
     try:
-        # Get the shared password
         shared = SharedPassword.query.filter_by(token=token).first_or_404()
         
         # Check if the link has expired

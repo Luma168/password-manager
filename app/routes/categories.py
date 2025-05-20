@@ -66,7 +66,6 @@ def update_category(id):
         if existing_category:
             return jsonify({'success': False, 'error': 'Cette catégorie existe déjà'}), 400
             
-        # Update category
         category.name = name
         category.icon = icon
         db.session.commit()
@@ -91,7 +90,6 @@ def delete_category(id):
         # Update all passwords in this category to have no category
         Password.query.filter_by(category_id=id, user_id=current_user.id).update({'category_id': None})
         
-        # Delete the category
         db.session.delete(category)
         db.session.commit()
         

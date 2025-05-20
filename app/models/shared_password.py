@@ -11,4 +11,5 @@ class SharedPassword(db.Model):
     max_views = db.Column(db.Integer, nullable=True)
     views_count = db.Column(db.Integer, default=0)
 
+    # Relationships
     password = db.relationship('Password', backref=db.backref('shares', lazy=True))
