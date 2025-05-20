@@ -12,57 +12,57 @@ Une application de gestion de mots de passe développée avec Flask.
 - **Fonction de Recherche** : Trouvez rapidement des mots de passe par titre, nom d'utilisateur ou catégorie
 - **Design Responsive** : Fonctionne sur ordinateurs de bureau et appareils mobiles
 
+## Chiffrement des Données
+
+L'application utilise l'algorithme Fernet (implémentation de la bibliothèque `cryptography`) pour le chiffrement symétrique des données sensibles. Fernet garantit que les données chiffrées ne peuvent pas être manipulées ou lues sans la clé de chiffrement.
+
+⚠️ **Important** : 
+- Ne partagez jamais votre clé de chiffrement
+- Faites une sauvegarde sécurisée de votre clé
+- Si vous perdez la clé, vous ne pourrez plus accéder aux données chiffrées
+
 ## Structure du Projet
 
 ```
 password-manager/
 ├── app/
 │   ├── models/
-│   │   ├── __init__.py
 │   │   ├── user.py
 │   │   ├── password.py
 │   │   ├── category.py
-│   │   └── shared_password.py
+│   │   ├── shared_password.py
+|   |   └── password_history.py
 │   ├── routes/
-│   │   ├── __init__.py
 │   │   ├── auth.py
 │   │   ├── passwords.py
 │   │   ├── categories.py
 │   │   └── sharing.py
 │   ├── services/
-│   │   ├── __init__.py
-│   │   ├── encryption.py
-│   │   ├── password_service.py
-│   │   └── sharing_service.py
-│   ├── utils/
-│   │   ├── __init__.py
-│   │   └── helpers.py
+│   │   └── encryption.py
 │   ├── static/
 │   │   ├── css/
 │   │   │   ├── base.css
-│   │   │   ├── dashboard.css
-│   │   │   └── style.css
+│   │   │   └── dashboard.css
 │   │   └── js/
-│   │       ├── main.js
-│   │       ├── dashboard.js
-│   │       ├── passwords.js
-│   │       ├── categories.js
-│   │       └── sharing.js
-│   ├── templates/
-│   │   ├── base.html
-│   │   ├── login.html
-│   │   ├── register.html
-│   │   └── dashboard.html
-│   └── __init__.py
+│   │       └── dashboard.js
+├── templates/
+│   ├── base.html
+│   ├── index.html
+│   ├── login.html
+│   ├── register.html
+│   ├── dashboard.html
+│   ├── password_generator.html
+│   └── shared_password.html
 ├── instance/
-│   └── passwords.db
+│   └── password_manager.db
 ├── config.py
 ├── run.py
 ├── requirements.txt
-└── encryption.key
+├── encryption.key
+└── .gitignore
 ```
 
-## Installation
+## Installation et Lancement
 
 1. Clonez le dépôt :
    ```
@@ -78,7 +78,7 @@ password-manager/
 3. Activez l'environnement virtuel :
    - Windows :
      ```
-     venv\Scripts\activate
+     .\venv\Scripts\activate
      ```
    - macOS/Linux :
      ```
@@ -95,17 +95,4 @@ password-manager/
    python run.py
    ```
 
-## Fonctionnalités de Sécurité
-
-- **Chiffrement** : Tous les mots de passe sont chiffrés à l'aide du chiffrement symétrique Fernet
-- **Protection CSRF** : Tous les formulaires sont protégés contre les attaques CSRF
-- **Gestion Sécurisée des Sessions** : Les sessions utilisateur sont gérées de manière sécurisée
-- **Hachage des Mots de Passe** : Les mots de passe utilisateur sont hachés avec bcrypt
-- **Partage Sécurisé** : Les mots de passe partagés ont des dates d'expiration et des limites de visualisation
-
-## Technologies Utilisées
-
-- **Backend** : Flask, SQLAlchemy, Flask-Login
-- **Frontend** : HTML, CSS, JavaScript, Bootstrap 5
-- **Base de Données** : SQLite 
-- **Sécurité** : Flask-WTF, bcrypt, cryptography
+6. Accédez à l'application dans votre navigateur à l'adresse : `http://localhost:5000`
