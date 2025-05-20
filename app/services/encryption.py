@@ -2,6 +2,9 @@ import os
 from cryptography.fernet import Fernet
 
 def get_or_create_encryption_key():
+    """
+    Récupère ou crée une clé de chiffrement.
+    """
     key_file = 'encryption.key'
     if os.path.exists(key_file):
         with open(key_file, 'rb') as f:

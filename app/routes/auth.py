@@ -8,12 +8,18 @@ auth = Blueprint('auth', __name__)
 
 @auth.route('/')
 def index():
+    """
+    Route pour l'accueil.
+    """
     if current_user.is_authenticated:
         return redirect(url_for('passwords.dashboard'))
     return render_template('index.html')
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
+    """
+    Route pour la connexion.
+    """
     if request.method == 'POST':
         user = User.query.filter_by(username=request.form.get('username')).first()
         if user and user.check_password(request.form.get('password')):
@@ -24,6 +30,9 @@ def login():
 
 @auth.route('/register', methods=['GET', 'POST'])
 def register():
+    """
+    Route pour l'inscription.
+    """
     if request.method == 'POST':
         username = request.form.get('username')
         email = request.form.get('email')
@@ -49,5 +58,8 @@ def register():
 @auth.route('/logout')
 @login_required
 def logout():
+    """
+    Route pour la déconnexion.
+    """
     logout_user()
     return redirect(url_for('auth.index'))

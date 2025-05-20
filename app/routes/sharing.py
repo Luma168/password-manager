@@ -15,6 +15,9 @@ sharing = Blueprint('sharing', __name__)
 @sharing.route('/share_password/<int:password_id>', methods=['POST'])
 @login_required
 def share_password(password_id):
+    """
+    Route pour partager un mot de passe.
+    """
     try:
         password = Password.query.filter_by(id=password_id, user_id=current_user.id).first()
         if not password:
@@ -69,6 +72,9 @@ def share_password(password_id):
 
 @sharing.route('/shared/<token>')
 def view_shared_password(token):
+    """
+    Route pour afficher un mot de passe partagé.
+    """
     try:
         shared = SharedPassword.query.filter_by(token=token).first_or_404()
         

@@ -2,6 +2,9 @@ from app import db
 from datetime import datetime
 
 class Category(db.Model):
+    """
+    Modèle pour les catégories de mots de passe.
+    """
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
     icon = db.Column(db.String(50), nullable=False)

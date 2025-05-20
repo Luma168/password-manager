@@ -6,9 +6,15 @@ from app.services.encryption import cipher_suite
 paris_tz = pytz.timezone('Europe/Paris')
 
 def get_paris_time():
+    """
+    Retourne la date et l'heure actuelles dans le fuseau horaire de Paris.
+    """
     return datetime.now(paris_tz)
 
 class PasswordHistory(db.Model):
+    """
+    Modèle pour l'historique des modifications des mots de passe.
+    """
     id = db.Column(db.Integer, primary_key=True)
     password_id = db.Column(db.Integer, db.ForeignKey('password.id'), nullable=False)
     title = db.Column(db.String(100), nullable=False)
@@ -25,9 +31,15 @@ class PasswordHistory(db.Model):
     category = db.relationship('Category', backref='password_history')
 
     def get_password(self):
+        """
+        Déchiffre le mot de passe et le retourne.
+        """
         return cipher_suite.decrypt(self.encrypted_password.encode()).decode()
 
     def to_dict(self):
+        """
+        Convertit le modèle en dictionnaire.
+        """
         return {
             'id': self.id,
             'password_id': self.password_id,

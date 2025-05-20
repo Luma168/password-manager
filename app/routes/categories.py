@@ -10,12 +10,18 @@ categories = Blueprint('categories', __name__)
 @categories.route('/categories')
 @login_required
 def get_categories():
+    """
+    Route pour récupérer toutes les catégories de l'utilisateur.
+    """
     categories = Category.query.filter_by(user_id=current_user.id).all()
     return jsonify([category.to_dict() for category in categories])
 
 @categories.route('/add_category', methods=['POST'])
 @login_required
 def add_category():
+    """
+    Route pour ajouter une nouvelle catégorie.
+    """
     try:
         name = request.form.get('name')
         icon = request.form.get('icon')
@@ -44,6 +50,9 @@ def add_category():
 @categories.route('/update_category/<int:id>', methods=['POST'])
 @login_required
 def update_category(id):
+    """
+    Route pour mettre à jour une catégorie.
+    """
     try:
         data = request.get_json()
         name = data.get('name')
@@ -81,6 +90,9 @@ def update_category(id):
 @categories.route('/delete_category/<int:id>', methods=['DELETE'])
 @login_required
 def delete_category(id):
+    """
+    Route pour supprimer une catégorie.
+    """
     try:
         # Check if category exists and belongs to user
         category = Category.query.filter_by(id=id, user_id=current_user.id).first()

@@ -17,6 +17,9 @@ passwords = Blueprint('passwords', __name__)
 @passwords.route('/dashboard')
 @login_required
 def dashboard():
+    """
+    Route pour le tableau de bord.
+    """
     category_id = request.args.get('category', type=int)
     query = Password.query.filter_by(user_id=current_user.id)
     
@@ -29,6 +32,9 @@ def dashboard():
 @passwords.route('/add_password', methods=['POST'])
 @login_required
 def add_password():
+    """
+    Route pour ajouter un mot de passe.
+    """
     try:
         title = request.form.get('title')
         username = request.form.get('username')
@@ -55,6 +61,9 @@ def add_password():
 @passwords.route('/get_password/<int:password_id>')
 @login_required
 def get_password(password_id):
+    """
+    Route pour récupérer un mot de passe.
+    """
     try:
         password = Password.query.get_or_404(password_id)
         if password.user_id != current_user.id:
@@ -77,6 +86,9 @@ def get_password(password_id):
 @passwords.route('/update_password', methods=['POST'])
 @login_required
 def update_password():
+    """
+    Route pour mettre à jour un mot de passe.
+    """
     try:
         password_id = request.form.get('id')
         password = Password.query.get_or_404(password_id)
@@ -113,6 +125,9 @@ def update_password():
 @passwords.route('/get_password_history/<int:password_id>')
 @login_required
 def get_password_history(password_id):
+    """
+    Route pour récupérer l'historique des modifications d'un mot de passe.
+    """
     try:
         password = Password.query.get_or_404(password_id)
         if password.user_id != current_user.id:
@@ -129,6 +144,9 @@ def get_password_history(password_id):
 @passwords.route('/delete_password/<int:password_id>', methods=['DELETE'])
 @login_required
 def delete_password(password_id):
+    """
+    Route pour supprimer un mot de passe.
+    """
     try:
         password = Password.query.get_or_404(password_id)
         if password.user_id != current_user.id:
@@ -150,11 +168,17 @@ def delete_password(password_id):
 @passwords.route('/password_generator')
 @login_required
 def password_generator():
+    """
+    Route pour le générateur de mot de passe.
+    """
     return render_template('password_generator.html')
 
 @passwords.route('/export-passwords', methods=['POST'])
 @login_required
 def export_passwords():
+    """
+    Route pour exporter les mots de passe.
+    """
     account_password = request.form.get('password')
     
     # Vérifier le mot de passe de l'utilisateur
@@ -200,6 +224,9 @@ def export_passwords():
 @passwords.route('/import-passwords', methods=['POST'])
 @login_required
 def import_passwords():
+    """
+    Route pour importer les mots de passe.
+    """
     if 'file' not in request.files:
         return jsonify({'error': 'Aucun fichier n\'a été envoyé'}), 400
     

@@ -2,6 +2,9 @@ from app import db
 from datetime import datetime
 
 class SharedPassword(db.Model):
+    """
+    Modèle pour les mots de passe partagés.
+    """
     id = db.Column(db.Integer, primary_key=True)
     password_id = db.Column(db.Integer, db.ForeignKey('password.id'), nullable=False)
     token = db.Column(db.String(64), unique=True, nullable=False)
